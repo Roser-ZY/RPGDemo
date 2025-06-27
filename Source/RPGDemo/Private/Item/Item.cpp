@@ -4,9 +4,11 @@
 #include "Item/Item.h"
 
 #include "Components/SphereComponent.h"
+#include "DemoCharacter.h"
 
 // Sets default values
-AItem::AItem() {
+AItem::AItem()
+{
     // Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
     PrimaryActorTick.bCanEverTick = true;
 
@@ -18,7 +20,8 @@ AItem::AItem() {
 }
 
 // Called when the game starts or when spawned
-void AItem::BeginPlay() {
+void AItem::BeginPlay()
+{
     Super::BeginPlay();
 
     if (sphere_component_) {
@@ -29,20 +32,35 @@ void AItem::BeginPlay() {
 
 void AItem::onSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                  UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
-                                 const FHitResult& SweepResult) {
+                                 const FHitResult& SweepResult)
+{
     if (GEngine) {
         GEngine->AddOnScreenDebugMessage(0, 30, FColor::Cyan, TEXT("Item begins overlapp."));
+    }
+
+    // Set the overlapping item to the character.
+    ADemoCharacter* demo_character = Cast<ADemoCharacter>(OtherActor);
+    if (demo_character) {
+        demo_character->setOverlappingItem(this);
     }
 }
 
 void AItem::onSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                               UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+                               UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
     if (GEngine) {
         GEngine->AddOnScreenDebugMessage(0, 30, FColor::Cyan, TEXT("Item ends overlap."));
+    }
+
+    // Unset the overlapping item to the character.
+    ADemoCharacter* demo_character = Cast<ADemoCharacter>(OtherActor);
+    if (demo_character) {
+        demo_character->setOverlappingItem(nullptr);
     }
 }
 
 // Called every frame
-void AItem::Tick(float DeltaTime) {
+void AItem::Tick(float DeltaTime)
+{
     Super::Tick(DeltaTime);
 }

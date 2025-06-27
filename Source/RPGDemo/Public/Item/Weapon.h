@@ -20,6 +20,9 @@ public:
     UFUNCTION(BlueprintCallable)
     void setWeaponCollisionEnabled(ECollisionEnabled::Type collision_enabled);
 
+    UFUNCTION(BlueprintCallable)
+    void equipTo(USceneComponent* to_parent, FName to_socket_name);
+
 protected:
     virtual void BeginPlay() override;
 

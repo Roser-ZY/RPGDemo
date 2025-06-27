@@ -14,7 +14,8 @@
 #include "Item/Weapon.h"
 
 // Sets default values
-ADemoCharacter::ADemoCharacter() {
+ADemoCharacter::ADemoCharacter()
+{
     // Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need
     // it.
     PrimaryActorTick.bCanEverTick = true;
@@ -49,13 +50,16 @@ ADemoCharacter::ADemoCharacter() {
     eyebrows_component_->AttachmentName = FString("head");
 }
 
-void ADemoCharacter::setWeaponCollisionEnabled(ECollisionEnabled::Type collision_enabled) {
+void ADemoCharacter::setWeaponCollisionEnabled(ECollisionEnabled::Type collision_enabled)
+{
     if (equipped_weapon_) {
         equipped_weapon_->setWeaponCollisionEnabled(collision_enabled);
     }
 }
+
 // Called when the game starts or when spawned
-void ADemoCharacter::BeginPlay() {
+void ADemoCharacter::BeginPlay()
+{
     Super::BeginPlay();
 
     // Binde delegates.
@@ -82,7 +86,8 @@ void ADemoCharacter::BeginPlay() {
     }
 }
 
-void ADemoCharacter::move(const FInputActionValue& input_value) {
+void ADemoCharacter::move(const FInputActionValue& input_value)
+{
     if (action_state_ == ECharacterActionState::Attacking) {
         return;
     }
@@ -105,20 +110,37 @@ void ADemoCharacter::move(const FInputActionValue& input_value) {
     }
 }
 
-void ADemoCharacter::look(const FInputActionValue& input_value) {
+void ADemoCharacter::look(const FInputActionValue& input_value)
+{
     const FVector2D look_vector = input_value.Get<FVector2D>();
     AddControllerPitchInput(look_vector.Y);
     AddControllerYawInput(look_vector.X);
 }
 
-void ADemoCharacter::jump(const FInputActionValue& input_value) {
+void ADemoCharacter::jump(const FInputActionValue& input_value)
+{
     const bool is_jumping = input_value.Get<bool>();
     if (is_jumping) {
         Jump();
     }
 }
 
-void ADemoCharacter::attack() {
+void ADemoCharacter::pick()
+{
+    if (overlapping_item_ == nullptr) {
+        return;
+    }
+
+    AWeapon* weapon = Cast<AWeapon>(overlapping_item_);
+    if (weapon) {
+        weapon->equipTo(GetMesh(), FName("right_hand_socket"));
+        equipped_weapon_ = weapon;
+        current_state_ = ECharacterState::EquippedOneHandWeapon;
+    }
+}
+
+void ADemoCharacter::attack()
+{
     UE_LOG(LogTemp, Warning, TEXT("Attacking."));
 
     // Return if the character does not equip an one hand weapon.
@@ -157,31 +179,36 @@ void ADemoCharacter::attack() {
     action_state_ = ECharacterActionState::Attacking;
 }
 
-void ADemoCharacter::end_attack() {
+void ADemoCharacter::end_attack()
+{
     action_state_ = ECharacterActionState::Unoccupied;
 }
 
 void ADemoCharacter::onCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                            UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
-                                           const FHitResult& SweepResult) {
-    equipped_weapon_ = Cast<AWeapon>(OtherActor);
-    if (equipped_weapon_) {
-        current_state_ = ECharacterState::EquippedOneHandWeapon;
-        GEngine->AddOnScreenDebugMessage(0, 30, FColor::Cyan, TEXT("Demo character equip the weapon."));
-    }
+                                           const FHitResult& SweepResult)
+{
+    // equipped_weapon_ = Cast<AWeapon>(OtherActor);
+    // if (equipped_weapon_) {
+    //     current_state_ = ECharacterState::EquippedOneHandWeapon;
+    //     GEngine->AddOnScreenDebugMessage(0, 30, FColor::Cyan, TEXT("Demo character equip the weapon."));
+    // }
 }
 
 void ADemoCharacter::onCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                                         UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+                                         UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
 }
 
 // Called every frame
-void ADemoCharacter::Tick(float DeltaTime) {
+void ADemoCharacter::Tick(float DeltaTime)
+{
     Super::Tick(DeltaTime);
 }
 
 // Called to bind functionality to input
-void ADemoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
+void ADemoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
     Super::SetupPlayerInputComponent(PlayerInputComponent);
 
     bool input_actions_are_all_ready = movement_action_ && look_action_ && jump_action_;
@@ -194,6 +221,7 @@ void ADemoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
             enhanced_input_component->BindAction(jump_action_, ETriggerEvent::Triggered, this, &ADemoCharacter::jump);
             enhanced_input_component->BindAction(attack_action_, ETriggerEvent::Triggered, this,
                                                  &ADemoCharacter::attack);
+            enhanced_input_component->BindAction(pick_action_, ETriggerEvent::Triggered, this, &ADemoCharacter::pick);
         }
     } else {
         UE_LOG(LogTemp, Error, TEXT("Input actions are not all ready."));

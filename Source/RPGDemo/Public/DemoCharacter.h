@@ -32,12 +32,19 @@ public:
     // Called to bind functionality to input
     virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-    ECharacterState get_current_state() {
+    ECharacterState get_current_state()
+    {
         return current_state_;
     }
 
-  UFUNCTION(BlueprintCallable)
-  void setWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
+    UFUNCTION(BlueprintCallable)
+    void setWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
+
+    UFUNCTION(BlueprintCallable)
+    FORCEINLINE void setOverlappingItem(AItem* item)
+    {
+        overlapping_item_ = item;
+    }
 
 protected:
     // Called when the game starts or when spawned
@@ -46,6 +53,7 @@ protected:
     void move(const FInputActionValue& input_value);
     void look(const FInputActionValue& input_value);
     void jump(const FInputActionValue& input_value);
+    void pick();
     void attack();
 
     UFUNCTION(BlueprintCallable)
@@ -71,6 +79,8 @@ protected:
     UInputAction* jump_action_ = nullptr;
     UPROPERTY(EditAnywhere, Category = "Input")
     UInputAction* attack_action_ = nullptr;
+    UPROPERTY(EditAnywhere, Category = "Input")
+    UInputAction* pick_action_ = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
     ECharacterState current_state_ = ECharacterState::Unequipped;
@@ -93,4 +103,7 @@ private:
     UGroomComponent* hair_component_ = nullptr;
     UPROPERTY(VisibleAnywhere, Category = "Appearance")
     UGroomComponent* eyebrows_component_ = nullptr;
+
+    UPROPERTY(VisibleInstanceOnly)
+    AItem* overlapping_item_ = nullptr;
 };

@@ -2,7 +2,6 @@
 
 
 #include "Item/Weapon.h"
-#include "DemoCharacter.h"
 #include "Components/BoxComponent.h"
 #include "Interfaces/HitInterface.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -28,6 +27,19 @@ void AWeapon::setWeaponCollisionEnabled(ECollisionEnabled::Type collision_enable
         trace_box_component_->SetCollisionEnabled(collision_enabled);
     }
 }
+void AWeapon::equipTo(USceneComponent* to_parent, FName to_socket_name)
+{
+    if (is_equipped) {
+        return;
+    }
+    if (to_parent) {
+        // Note: The AttachToComponent() is same as Attach Component To Component in Blueprint.
+        FAttachmentTransformRules transform_rules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget,
+                                                  EAttachmentRule::SnapToTarget, true);
+        static_mesh_component_->AttachToComponent(to_parent, transform_rules, to_socket_name);
+    }
+    is_equipped = true;
+}
 
 void AWeapon::BeginPlay()
 {
@@ -44,19 +56,6 @@ void AWeapon::onSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AAc
                                    const FHitResult& SweepResult)
 {
     Super::onSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
-
-    if (is_equipped) {
-        return;
-    }
-    ADemoCharacter* demo_character = Cast<ADemoCharacter>(OtherActor);
-    if (demo_character) {
-        // Note: The AttachToComponent() is same as Attach Component To Component in Blueprint.
-        FAttachmentTransformRules transform_rules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget,
-                                                  EAttachmentRule::SnapToTarget, true);
-        static_mesh_component_->AttachToComponent(demo_character->GetMesh(), transform_rules,
-                                                  FName("right_hand_socket"));
-    }
-    is_equipped = true;
 }
 
 void AWeapon::onSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,

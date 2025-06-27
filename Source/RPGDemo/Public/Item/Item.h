@@ -31,10 +31,9 @@ protected:
     virtual void onSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-    UStaticMeshComponent* static_mesh_component_;
+    UStaticMeshComponent* static_mesh_component_ = nullptr;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-    USphereComponent* sphere_component_;
+    USphereComponent* sphere_component_ = nullptr;
 };
