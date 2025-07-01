@@ -23,13 +23,13 @@ AWeapon::AWeapon()
 
 void AWeapon::setWeaponCollisionEnabled(ECollisionEnabled::Type collision_enabled)
 {
-    if (is_equipped && trace_box_component_) {
+    if (item_state_ == EItemState::EIS_Equipped && trace_box_component_) {
         trace_box_component_->SetCollisionEnabled(collision_enabled);
     }
 }
 void AWeapon::equipTo(USceneComponent* to_parent, FName to_socket_name)
 {
-    if (is_equipped) {
+    if (item_state_ == EItemState::EIS_Equipped) {
         return;
     }
     if (to_parent) {
@@ -38,7 +38,7 @@ void AWeapon::equipTo(USceneComponent* to_parent, FName to_socket_name)
                                                   EAttachmentRule::SnapToTarget, true);
         static_mesh_component_->AttachToComponent(to_parent, transform_rules, to_socket_name);
     }
-    is_equipped = true;
+    item_state_ = EItemState::EIS_Equipped;
 }
 
 void AWeapon::BeginPlay()

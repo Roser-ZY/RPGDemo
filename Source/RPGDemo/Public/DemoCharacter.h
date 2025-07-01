@@ -53,7 +53,7 @@ protected:
     void move(const FInputActionValue& input_value);
     void look(const FInputActionValue& input_value);
     void jump(const FInputActionValue& input_value);
-    void pick();
+    void interact();
     void attack();
 
     UFUNCTION(BlueprintCallable)
@@ -80,7 +80,7 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Input")
     UInputAction* attack_action_ = nullptr;
     UPROPERTY(EditAnywhere, Category = "Input")
-    UInputAction* pick_action_ = nullptr;
+    UInputAction* interact_action_ = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
     ECharacterState current_state_ = ECharacterState::Unequipped;
@@ -89,6 +89,8 @@ protected:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
     UAnimMontage* attack_montage_ = nullptr;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+    UAnimMontage* equip_montage_ = nullptr;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Equipment")
     AWeapon* equipped_weapon_ = nullptr;

@@ -125,17 +125,45 @@ void ADemoCharacter::jump(const FInputActionValue& input_value)
     }
 }
 
-void ADemoCharacter::pick()
+void ADemoCharacter::interact()
 {
-    if (overlapping_item_ == nullptr) {
-        return;
-    }
-
+    // Equip only one weapon.
     AWeapon* weapon = Cast<AWeapon>(overlapping_item_);
-    if (weapon) {
+    if (weapon && !equipped_weapon_) {
         weapon->equipTo(GetMesh(), FName("right_hand_socket"));
         equipped_weapon_ = weapon;
         current_state_ = ECharacterState::EquippedOneHandWeapon;
+        overlapping_item_ = nullptr;
+
+        UE_LOG(LogTemp, Warning, TEXT("First equip the weapon."));
+    } else if (equipped_weapon_) {
+        // Equip and unequip.
+        // Check the AnimInstance.
+        USkeletalMeshComponent* skeletal_mesh_component = GetMesh();
+        if (skeletal_mesh_component == nullptr) {
+            UE_LOG(LogTemp, Error, TEXT("The skeletal mesh is not ready!"));
+            return;
+        }
+
+        UDemoCharacterAnimInstance* anim_instance =
+            Cast<UDemoCharacterAnimInstance>(skeletal_mesh_component->GetAnimInstance());
+        if (anim_instance == nullptr) {
+            UE_LOG(LogTemp, Error, TEXT("The animation of the skeletal mesh is not ready!"));
+            return;
+        }
+
+        if (action_state_ == ECharacterActionState::Unoccupied) {
+            anim_instance->Montage_Play(equip_montage_);
+            if (current_state_ == ECharacterState::EquippedOneHandWeapon) {
+                UE_LOG(LogTemp, Warning, TEXT("Unequip the weapon."));
+                anim_instance->Montage_JumpToSection(FName("Unequip"));
+                current_state_ = ECharacterState::Unequipped;
+            } else if (current_state_ == ECharacterState::Unequipped) {
+                UE_LOG(LogTemp, Warning, TEXT("Equip the weapon."));
+                anim_instance->Montage_JumpToSection(FName("Equip"));
+                current_state_ = ECharacterState::EquippedOneHandWeapon;
+            }
+        }
     }
 }
 
@@ -143,7 +171,7 @@ void ADemoCharacter::attack()
 {
     UE_LOG(LogTemp, Warning, TEXT("Attacking."));
 
-    // Return if the character does not equip an one hand weapon.
+    // Return if the character does not equip an one-hand weapon.
     if (current_state_ != ECharacterState::EquippedOneHandWeapon) {
         return;
     }
@@ -188,11 +216,6 @@ void ADemoCharacter::onCapsuleBeginOverlap(UPrimitiveComponent* OverlappedCompon
                                            UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
                                            const FHitResult& SweepResult)
 {
-    // equipped_weapon_ = Cast<AWeapon>(OtherActor);
-    // if (equipped_weapon_) {
-    //     current_state_ = ECharacterState::EquippedOneHandWeapon;
-    //     GEngine->AddOnScreenDebugMessage(0, 30, FColor::Cyan, TEXT("Demo character equip the weapon."));
-    // }
 }
 
 void ADemoCharacter::onCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -218,10 +241,10 @@ void ADemoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
             enhanced_input_component->BindAction(movement_action_, ETriggerEvent::Triggered, this,
                                                  &ADemoCharacter::move);
             enhanced_input_component->BindAction(look_action_, ETriggerEvent::Triggered, this, &ADemoCharacter::look);
-            enhanced_input_component->BindAction(jump_action_, ETriggerEvent::Triggered, this, &ADemoCharacter::jump);
-            enhanced_input_component->BindAction(attack_action_, ETriggerEvent::Triggered, this,
-                                                 &ADemoCharacter::attack);
-            enhanced_input_component->BindAction(pick_action_, ETriggerEvent::Triggered, this, &ADemoCharacter::pick);
+            enhanced_input_component->BindAction(jump_action_, ETriggerEvent::Started, this, &ADemoCharacter::jump);
+            enhanced_input_component->BindAction(attack_action_, ETriggerEvent::Started, this, &ADemoCharacter::attack);
+            enhanced_input_component->BindAction(interact_action_, ETriggerEvent::Started, this,
+                                                 &ADemoCharacter::interact);
         }
     } else {
         UE_LOG(LogTemp, Error, TEXT("Input actions are not all ready."));

@@ -40,9 +40,6 @@ protected:
     UFUNCTION(BlueprintImplementableEvent)
     void createField(const FVector& field_location);
 
-    UPROPERTY(EditAnywhere)
-    bool is_equipped = false;
-
     UPROPERTY(VisibleAnywhere, Category = "Weapon Trace")
     UBoxComponent* trace_box_component_ = nullptr;
     UPROPERTY(VisibleAnywhere, Category = "Weapon Trace")

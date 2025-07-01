@@ -8,6 +8,11 @@
 
 class USphereComponent;
 
+enum class EItemState : uint8 {
+    EIS_Hovering,
+    EIS_Equipped
+};
+
 UCLASS()
 class RPGDEMO_API AItem : public AActor {
     GENERATED_BODY()
@@ -36,4 +41,7 @@ protected:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     USphereComponent* sphere_component_ = nullptr;
+
+    // The item is hovering in the world.
+    EItemState item_state_ = EItemState::EIS_Hovering;
 };
