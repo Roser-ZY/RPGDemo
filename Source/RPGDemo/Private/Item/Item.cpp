@@ -35,7 +35,7 @@ void AItem::onSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActo
                                  const FHitResult& SweepResult)
 {
     if (GEngine) {
-        GEngine->AddOnScreenDebugMessage(0, 30, FColor::Cyan, TEXT("Item begins overlapp."));
+        GEngine->AddOnScreenDebugMessage(0, 30, FColor::Cyan, TEXT("Item begins overlap."));
     }
 
     // Set the overlapping item to the character.

@@ -9,5 +9,6 @@ enum class ECharacterState : uint8 {
 UENUM(BlueprintType)
 enum class ECharacterActionState : uint8 {
     Unoccupied UMETA(DisplayName = "Unoccupied"),
-    Attacking UMETA(DisplayName = "Attacking")
+    Attacking UMETA(DisplayName = "Attacking"),
+    EquippingWeapon UMETA(DisplayName = "EquippingWeapon")
 };

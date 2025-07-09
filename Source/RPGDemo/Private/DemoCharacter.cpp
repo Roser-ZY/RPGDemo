@@ -53,6 +53,7 @@ ADemoCharacter::ADemoCharacter()
 void ADemoCharacter::setWeaponCollisionEnabled(ECollisionEnabled::Type collision_enabled)
 {
     if (equipped_weapon_) {
+        equipped_weapon_->clearIgnoredActors();
         equipped_weapon_->setWeaponCollisionEnabled(collision_enabled);
     }
 }
@@ -88,7 +89,7 @@ void ADemoCharacter::BeginPlay()
 
 void ADemoCharacter::move(const FInputActionValue& input_value)
 {
-    if (action_state_ == ECharacterActionState::Attacking) {
+    if (action_state_ != ECharacterActionState::Unoccupied) {
         return;
     }
 
@@ -119,6 +120,9 @@ void ADemoCharacter::look(const FInputActionValue& input_value)
 
 void ADemoCharacter::jump(const FInputActionValue& input_value)
 {
+    if (action_state_ != ECharacterActionState::Unoccupied) {
+        return;
+    }
     const bool is_jumping = input_value.Get<bool>();
     if (is_jumping) {
         Jump();
@@ -137,6 +141,10 @@ void ADemoCharacter::interact()
 
         UE_LOG(LogTemp, Warning, TEXT("First equip the weapon."));
     } else if (equipped_weapon_) {
+        if (action_state_ != ECharacterActionState::Unoccupied) {
+            return;
+        }
+
         // Equip and unequip.
         // Check the AnimInstance.
         USkeletalMeshComponent* skeletal_mesh_component = GetMesh();
@@ -158,10 +166,12 @@ void ADemoCharacter::interact()
                 UE_LOG(LogTemp, Warning, TEXT("Unequip the weapon."));
                 anim_instance->Montage_JumpToSection(FName("Unequip"));
                 current_state_ = ECharacterState::Unequipped;
+                action_state_ = ECharacterActionState::EquippingWeapon;
             } else if (current_state_ == ECharacterState::Unequipped) {
                 UE_LOG(LogTemp, Warning, TEXT("Equip the weapon."));
                 anim_instance->Montage_JumpToSection(FName("Equip"));
                 current_state_ = ECharacterState::EquippedOneHandWeapon;
+                action_state_ = ECharacterActionState::EquippingWeapon;
             }
         }
     }
@@ -176,7 +186,7 @@ void ADemoCharacter::attack()
         return;
     }
     // Return if the character is occupied.
-    if (action_state_ == ECharacterActionState::Attacking) {
+    if (action_state_ != ECharacterActionState::Unoccupied) {
         return;
     }
 
@@ -212,6 +222,25 @@ void ADemoCharacter::end_attack()
     action_state_ = ECharacterActionState::Unoccupied;
 }
 
+void ADemoCharacter::unequip()
+{
+    if (equipped_weapon_) {
+        equipped_weapon_->attachMeshToSocket(GetMesh(), FName("SpineSwordSocket"));
+    }
+}
+
+void ADemoCharacter::equip()
+{
+    if (equipped_weapon_) {
+        equipped_weapon_->attachMeshToSocket(GetMesh(), FName("right_hand_socket"));
+    }
+}
+
+void ADemoCharacter::end_equip()
+{
+    action_state_ = ECharacterActionState::Unoccupied;
+}
+
 void ADemoCharacter::onCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                            UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
                                            const FHitResult& SweepResult)
@@ -241,7 +270,7 @@ void ADemoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
             enhanced_input_component->BindAction(movement_action_, ETriggerEvent::Triggered, this,
                                                  &ADemoCharacter::move);
             enhanced_input_component->BindAction(look_action_, ETriggerEvent::Triggered, this, &ADemoCharacter::look);
-            enhanced_input_component->BindAction(jump_action_, ETriggerEvent::Started, this, &ADemoCharacter::jump);
+            enhanced_input_component->BindAction(jump_action_, ETriggerEvent::Triggered, this, &ADemoCharacter::jump);
             enhanced_input_component->BindAction(attack_action_, ETriggerEvent::Started, this, &ADemoCharacter::attack);
             enhanced_input_component->BindAction(interact_action_, ETriggerEvent::Started, this,
                                                  &ADemoCharacter::interact);

@@ -59,6 +59,15 @@ protected:
     UFUNCTION(BlueprintCallable)
     void end_attack();
 
+    UFUNCTION(BlueprintCallable)
+    void unequip();
+
+    UFUNCTION(BlueprintCallable)
+    void equip();
+
+    UFUNCTION(BlueprintCallable)
+    void end_equip();
+
     UFUNCTION()
     virtual void onCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,

@@ -519,3 +519,5 @@ DerivedDataCache/
 *.appgit
 
 .DS_Store
+
+ParagonMinions/

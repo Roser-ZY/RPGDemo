@@ -3,6 +3,7 @@
 
 #include "Item/Weapon.h"
 #include "Components/BoxComponent.h"
+#include "Components/SphereComponent.h"
 #include "Interfaces/HitInterface.h"
 #include "Kismet/KismetSystemLibrary.h"
 
@@ -27,18 +28,33 @@ void AWeapon::setWeaponCollisionEnabled(ECollisionEnabled::Type collision_enable
         trace_box_component_->SetCollisionEnabled(collision_enabled);
     }
 }
+
+
+void AWeapon::attachMeshToSocket(USceneComponent* to_parent, FName to_socket_name)
+{
+    // Note: The AttachToComponent() is same as Attach Component To Component in Blueprint.
+    FAttachmentTransformRules transform_rules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget,
+                                              EAttachmentRule::SnapToTarget, true);
+    static_mesh_component_->AttachToComponent(to_parent, transform_rules, to_socket_name);
+}
+
 void AWeapon::equipTo(USceneComponent* to_parent, FName to_socket_name)
 {
     if (item_state_ == EItemState::EIS_Equipped) {
         return;
     }
     if (to_parent) {
-        // Note: The AttachToComponent() is same as Attach Component To Component in Blueprint.
-        FAttachmentTransformRules transform_rules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget,
-                                                  EAttachmentRule::SnapToTarget, true);
-        static_mesh_component_->AttachToComponent(to_parent, transform_rules, to_socket_name);
+        attachMeshToSocket(to_parent, to_socket_name);
     }
     item_state_ = EItemState::EIS_Equipped;
+
+    // Disable the collision of the sphere component.
+    sphere_component_->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void AWeapon::clearIgnoredActors()
+{
+    ignored_actors_.Empty();
 }
 
 void AWeapon::BeginPlay()
@@ -56,6 +72,8 @@ void AWeapon::onSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AAc
                                    const FHitResult& SweepResult)
 {
     Super::onSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
+    UE_LOG(LogTemp, Warning, TEXT("Overlapped with %s."), *OtherActor->GetName());
+    UE_LOG(LogTemp, Warning, TEXT("Overlapped with %s."), *OtherComp->GetName());
 }
 
 void AWeapon::onSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -70,16 +88,25 @@ void AWeapon::onBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 {
     const FVector start = box_trace_start_->GetComponentLocation();
     const FVector end = box_trace_end_->GetComponentLocation();
-    TArray<AActor*> ignored_actors;
-    ignored_actors.Add(this);
     FHitResult box_hit;
+
+    // // Debug: Log the name of the overlapped component and actor.
+    // if (OverlappedComponent) {
+    //     UE_LOG(LogTemp, Warning, TEXT("%s"), *OtherComp->GetName());
+    //     UE_LOG(LogTemp, Warning, TEXT("%s"), *OtherActor->GetName());
+    //     DrawDebugPoint(GetWorld(), SweepResult.ImpactPoint, 10.0f, FColor::Yellow, false, 2.0f);
+    // }
+
     UKismetSystemLibrary::BoxTraceSingle(this, start, end, FVector(5.0f, 5.0f, 5.0f),
                                          box_trace_start_->GetComponentRotation(), TraceTypeQuery1, false,
-                                         ignored_actors, EDrawDebugTrace::ForDuration, box_hit, true);
+                                         ignored_actors_, EDrawDebugTrace::None, box_hit, true);
     if (box_hit.GetActor()) {
+
         IHitInterface* hit_interface = Cast<IHitInterface>(box_hit.GetActor());
         if (hit_interface) {
             hit_interface->Execute_getHit(box_hit.GetActor(), box_hit.ImpactPoint);
+            // Ignore the hit actor to avoid multiple hit.
+            ignored_actors_.AddUnique(box_hit.GetActor());
         }
         createField(box_hit.ImpactPoint);
     }
