@@ -58,4 +58,9 @@
 
 ## 备注
 
-该项目使用了 ParagonMinions 项目里的素材，由于该项目太大，故没有推送到远程仓库，需要本地添加。
+### 忽略项目
+
+这些项目太大，没有通过 Git 管理并推送到远程仓库，需要本地添加。
+
+- ParagonMinions
+- AcientTreasures

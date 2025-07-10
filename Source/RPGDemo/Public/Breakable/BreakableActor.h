@@ -7,6 +7,10 @@
 #include "Interfaces/HitInterface.h"
 #include "BreakableActor.generated.h"
 
+
+
+class UCapsuleComponent;
+class ATreasure;
 UCLASS()
 class RPGDEMO_API ABreakableActor : public AActor, public IHitInterface {
     GENERATED_BODY()
@@ -25,4 +29,11 @@ protected:
 
     UPROPERTY(VisibleAnywhere)
     TObjectPtr<UGeometryCollectionComponent> geometry_collection_;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+    UCapsuleComponent* capsule_collection_;
+
+private:
+    UPROPERTY(EditAnywhere)
+    TSubclassOf<ATreasure> treasure_class_;
 };

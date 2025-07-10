@@ -2,7 +2,10 @@
 
 
 #include "Breakable/BreakableActor.h"
+
+#include "Components/CapsuleComponent.h"
 #include "GeometryCollection/GeometryCollectionComponent.h"
+#include "Item/Treasure.h"
 
 // Sets default values
 ABreakableActor::ABreakableActor()
@@ -12,8 +15,12 @@ ABreakableActor::ABreakableActor()
 
     geometry_collection_ = CreateDefaultSubobject<UGeometryCollectionComponent>("GeometryCollection");
     SetRootComponent(geometry_collection_);
-
     geometry_collection_->SetGenerateOverlapEvents(true);
+
+    capsule_collection_ = CreateDefaultSubobject<UCapsuleComponent>("Capsule");
+    capsule_collection_->SetupAttachment(GetRootComponent());
+    capsule_collection_->SetCollisionResponseToChannels(ECR_Ignore);
+    capsule_collection_->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 }
 
 // Called when the game starts or when spawned
@@ -27,8 +34,16 @@ void ABreakableActor::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 }
-
 void ABreakableActor::getHit_Implementation(const FVector& impact_point)
 {
-    
+    UWorld* world = GetWorld();
+    if (!world) {
+        return;
+    }
+
+    if (treasure_class_) {
+        FVector location = GetActorLocation();
+        location.Z += 75.0f;
+        world->SpawnActor<ATreasure>(treasure_class_, location, GetActorRotation());
+    }
 }
