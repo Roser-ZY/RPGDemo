@@ -11,7 +11,7 @@ public class RPGDemo : ModuleRules
 		PublicDependencyModuleNames.AddRange(new[]
 		{
 			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "HairStrandsCore",
-			"GeometryCollectionEngine", "UMG"
+			"GeometryCollectionEngine", "UMG", "Niagara"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

@@ -41,9 +41,11 @@ void ABreakableActor::getHit_Implementation(const FVector& impact_point)
         return;
     }
 
-    if (treasure_class_) {
+    int32 treasure_class_num = treasure_classes_.Num();
+    if (treasure_class_num > 0) {
         FVector location = GetActorLocation();
         location.Z += 75.0f;
-        world->SpawnActor<ATreasure>(treasure_class_, location, GetActorRotation());
+        const int32 selection = FMath::RandRange(0, treasure_class_num - 1);
+        world->SpawnActor<ATreasure>(treasure_classes_[selection], location, GetActorRotation());
     }
 }

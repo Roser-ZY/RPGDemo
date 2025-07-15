@@ -6,6 +6,8 @@
 #include "Components/SphereComponent.h"
 #include "Interfaces/HitInterface.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/GameplayStatics.h"
+#include "NiagaraComponent.h"
 
 AWeapon::AWeapon()
 {
@@ -38,7 +40,7 @@ void AWeapon::attachMeshToSocket(USceneComponent* to_parent, FName to_socket_nam
     static_mesh_component_->AttachToComponent(to_parent, transform_rules, to_socket_name);
 }
 
-void AWeapon::equipTo(USceneComponent* to_parent, FName to_socket_name)
+void AWeapon::equipTo(USceneComponent* to_parent, FName to_socket_name, AActor* in_owner, APawn* in_instigator)
 {
     if (item_state_ == EItemState::EIS_Equipped) {
         return;
@@ -48,8 +50,18 @@ void AWeapon::equipTo(USceneComponent* to_parent, FName to_socket_name)
     }
     item_state_ = EItemState::EIS_Equipped;
 
+    SetOwner(in_owner);
+    SetInstigator(in_instigator);
+
     // Disable the collision of the sphere component.
-    sphere_component_->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    if (sphere_component_) {
+        sphere_component_->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }
+
+    // Deactivate the embers effect when equipped.
+    if (embers_effect_) {
+        embers_effect_->Deactivate();
+    }
 }
 
 void AWeapon::clearIgnoredActors()
@@ -109,5 +121,8 @@ void AWeapon::onBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor
             ignored_actors_.AddUnique(box_hit.GetActor());
         }
         createField(box_hit.ImpactPoint);
+
+        UGameplayStatics::ApplyDamage(box_hit.GetActor(), damage_, GetInstigator()->GetController(), this,
+                                      UDamageType::StaticClass());
     }
 }

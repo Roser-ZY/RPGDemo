@@ -21,4 +21,7 @@ public:
 private:
     UPROPERTY(EditAnywhere, Category = "Sound")
     USoundBase* pickup_sound_;
+
+    UPROPERTY(EditAnywhere, Category = "Treasure Gold")
+    int32 gold_ = 0.0f;
 };

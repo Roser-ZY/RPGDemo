@@ -9,7 +9,7 @@
 
 
 
-class UWidgetComponent;
+class UHealthBarComponent;
 class UAttributeComponent;
 UCLASS()
 class RPGDEMO_API AEnemy : public ACharacter, public IHitInterface {
@@ -28,6 +28,9 @@ public:
 
     virtual void getHit_Implementation(const FVector& impact_point) override;
 
+    virtual float TakeDamage(float DamageAmount, const struct FDamageEvent& DamageEvent,
+                             class AController* EventInstigator, AActor* DamageCauser) override;
+
 protected:
     // Called when the game starts or when spawned
     virtual void BeginPlay() override;
@@ -39,7 +42,7 @@ protected:
     TObjectPtr<UAttributeComponent> attribute_component_;
 
     UPROPERTY(VisibleAnywhere, Category = "HUD")
-    TObjectPtr<UWidgetComponent> health_bar_widget_;
+    TObjectPtr<UHealthBarComponent> health_bar_widget_;
 
     UPROPERTY(EditAnywhere, Category = "VisualEffects")
     UParticleSystem* hit_particle_system_ = nullptr;

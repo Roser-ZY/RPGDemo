@@ -6,12 +6,10 @@
 #include "GameFramework/Actor.h"
 #include "Item.generated.h"
 
+class UNiagaraComponent;
 class USphereComponent;
 
-enum class EItemState : uint8 {
-    EIS_Hovering,
-    EIS_Equipped
-};
+enum class EItemState : uint8 { EIS_Hovering, EIS_Equipped };
 
 UCLASS()
 class RPGDEMO_API AItem : public AActor {
@@ -44,4 +42,7 @@ protected:
 
     // The item is hovering in the world.
     EItemState item_state_ = EItemState::EIS_Hovering;
+
+    UPROPERTY(EditAnywhere)
+    UNiagaraComponent* embers_effect_ = nullptr;
 };

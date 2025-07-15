@@ -17,6 +17,15 @@ void UAttributeComponent::BeginPlay()
 {
     Super::BeginPlay();
 }
+void UAttributeComponent::receiveDamage(float damage)
+{
+    // Clamp the value between 0 and max_health when calculating.
+    current_health_ = FMath::Clamp(current_health_ - damage, 0, max_health_);
+}
+float UAttributeComponent::getHealthPercentage()
+{
+    return current_health_ / max_health_;
+}
 
 
 // Called every frame

@@ -22,7 +22,7 @@ public:
     void attachMeshToSocket(USceneComponent* to_parent, FName to_socket_name);
 
     UFUNCTION(BlueprintCallable)
-    void equipTo(USceneComponent* to_parent, FName to_socket_name);
+    void equipTo(USceneComponent* to_parent, FName to_socket_name, AActor* in_owner, APawn* in_instigator);
 
     void clearIgnoredActors();
 
@@ -52,4 +52,7 @@ protected:
     USceneComponent* box_trace_end_ = nullptr;
 
     TArray<AActor*> ignored_actors_;
+
+    UPROPERTY(EditAnywhere, Category = "Weapon Property")
+    float damage_ = 20.0f;
 };

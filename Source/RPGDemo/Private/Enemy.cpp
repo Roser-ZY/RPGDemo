@@ -6,7 +6,7 @@
 #include "Component/AttributeComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Components/WidgetComponent.h"
+#include "HUD/HealthBarComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 
@@ -19,7 +19,7 @@ AEnemy::AEnemy()
 
     // Set the attributes of collision.
     USkeletalMeshComponent* skeletal_mesh = GetMesh();
-    if (skeletal_mesh == nullptr) {
+    if (skeletal_mesh) {
         skeletal_mesh->SetCollisionObjectType(ECC_WorldDynamic);
         skeletal_mesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
         skeletal_mesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
@@ -30,8 +30,9 @@ AEnemy::AEnemy()
         }
     }
 
+    // The attribute component do not need attach to any component.
     attribute_component_ = CreateDefaultSubobject<UAttributeComponent>(TEXT("Attribute"));
-    health_bar_widget_ = CreateDefaultSubobject<UWidgetComponent>(TEXT("Health Bar"));
+    health_bar_widget_ = CreateDefaultSubobject<UHealthBarComponent>(TEXT("Health Bar"));
     health_bar_widget_->SetupAttachment(RootComponent);
 }
 
@@ -108,4 +109,15 @@ void AEnemy::getHit_Implementation(const FVector& impact_point)
         return;
     }
     UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), hit_particle_system_, impact_point);
+}
+float AEnemy::TakeDamage(float DamageAmount, const struct FDamageEvent& DamageEvent, class AController* EventInstigator,
+                         AActor* DamageCauser)
+{
+    if (attribute_component_ == nullptr || health_bar_widget_ == nullptr) {
+        UE_LOG(LogTemp, Error, TEXT("Components are not set."));
+        return 0.0f;
+    }
+    attribute_component_->receiveDamage(DamageAmount);
+    health_bar_widget_->setHealthPercentage(attribute_component_->getHealthPercentage());
+    return DamageAmount;
 }

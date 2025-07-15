@@ -134,7 +134,10 @@ void ADemoCharacter::interact()
     // Equip only one weapon.
     AWeapon* weapon = Cast<AWeapon>(overlapping_item_);
     if (weapon && !equipped_weapon_) {
-        weapon->equipTo(GetMesh(), FName("right_hand_socket"));
+        weapon->equipTo(GetMesh(), FName("right_hand_socket"), this, this);
+        // Set the weapon's owner.
+        // weapon->SetOwner(this);
+        // weapon->SetInstigator(this);
         equipped_weapon_ = weapon;
         current_state_ = ECharacterState::EquippedOneHandWeapon;
         overlapping_item_ = nullptr;

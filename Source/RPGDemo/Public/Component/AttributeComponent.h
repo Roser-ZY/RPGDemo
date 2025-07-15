@@ -24,7 +24,11 @@ protected:
 
 private:
     UPROPERTY(EditAnywhere, Category = "Actor Attributes")
-    float currrent_health_ = 100.0f;
+    float current_health_ = 100.0f;
     UPROPERTY(EditAnywhere, Category = "Actor Attributes")
     float max_health_ = 100.0f;
+
+public:
+    void receiveDamage(float damage);
+    float getHealthPercentage();
 };

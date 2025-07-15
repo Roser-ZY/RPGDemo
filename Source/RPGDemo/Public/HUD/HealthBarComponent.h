@@ -6,12 +6,18 @@
 #include "Components/WidgetComponent.h"
 #include "HealthBarComponent.generated.h"
 
+class UHealthBar;
+
 /**
- * 
+ *
  */
 UCLASS()
-class RPGDEMO_API UHealthBarComponent : public UWidgetComponent
-{
-	GENERATED_BODY()
-	
+class RPGDEMO_API UHealthBarComponent : public UWidgetComponent {
+    GENERATED_BODY()
+public:
+    void setHealthPercentage(float percentage);
+
+private:
+    UPROPERTY()
+    UHealthBar* health_bar_widget_ = nullptr;
 };
