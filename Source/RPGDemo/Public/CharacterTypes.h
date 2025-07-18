@@ -12,3 +12,6 @@ enum class ECharacterActionState : uint8 {
     Attacking UMETA(DisplayName = "Attacking"),
     EquippingWeapon UMETA(DisplayName = "EquippingWeapon")
 };
+
+UENUM(BlueprintType)
+enum class EEnemyDeathPose : uint8 { EEDP_Alive UMETA(DisplayName = "Alive"), EEDP_Death UMETA(DisplayName = "Death") };

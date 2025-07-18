@@ -3,12 +3,14 @@
 
 #include "Enemy.h"
 
+#include "AIController.h"
 #include "Component/AttributeComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "HUD/HealthBarComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "Kismet/KismetSystemLibrary.h"
+#include "Navigation/PathFollowingComponent.h"
 
 // Sets default values
 AEnemy::AEnemy()
@@ -34,18 +36,84 @@ AEnemy::AEnemy()
     attribute_component_ = CreateDefaultSubobject<UAttributeComponent>(TEXT("Attribute"));
     health_bar_widget_ = CreateDefaultSubobject<UHealthBarComponent>(TEXT("Health Bar"));
     health_bar_widget_->SetupAttachment(RootComponent);
+
+    GetCharacterMovement()->bOrientRotationToMovement = true;
+    bUseControllerRotationPitch = false;
+    bUseControllerRotationYaw = false;
+    bUseControllerRotationRoll = false;
 }
 
 // Called when the game starts or when spawned
 void AEnemy::BeginPlay()
 {
     Super::BeginPlay();
+
+    if (health_bar_widget_) {
+        health_bar_widget_->SetVisibility(false);
+    }
+
+    enemy_ai_controller_ = Cast<AAIController>(GetController());
+    moveToTarget(patrol_target_);
 }
 
+void AEnemy::moveToTarget(AActor* target)
+{
+    if (target == nullptr || enemy_ai_controller_ == nullptr) {
+        return;
+    }
+
+    FAIMoveRequest move_request;
+    move_request.SetGoalActor(target);
+    move_request.SetAcceptanceRadius(15.0f);
+    enemy_ai_controller_->MoveTo(move_request);
+}
+
+AActor* AEnemy::choosePatrolTarget()
+{
+    if (patrol_target_) {
+        const int32 num_patrol_targets = patrol_targets_.Num();
+        if (num_patrol_targets > 0) {
+            TObjectPtr<AActor> new_target = patrol_target_;
+            do {
+                const int32 target_selection = FMath::RandRange(0, num_patrol_targets - 1);
+                new_target = patrol_targets_[target_selection];
+            } while (new_target == patrol_target_);
+            return new_target;
+        }
+    }
+    return patrol_target_;
+}
+
+void AEnemy::patrolTimeFinished()
+{
+    moveToTarget(patrol_target_);
+}
+
+void AEnemy::checkCombatTarget()
+{
+    if (!inTargetRange(combat_target_, combat_radius_)) {
+        combat_target_ = nullptr;
+        if (health_bar_widget_) {
+            health_bar_widget_->SetVisibility(false);
+        }
+    }
+}
+void AEnemy::checkPatrolTarget()
+{
+    if (inTargetRange(patrol_target_, patrol_radius_)) {
+        patrol_target_ = choosePatrolTarget();
+        const float wait_time = FMath::RandRange(wait_min_, wait_max_);
+        GetWorldTimerManager().SetTimer(patrol_timer_, this, &AEnemy::patrolTimeFinished, wait_time);
+    }
+}
 // Called every frame
 void AEnemy::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
+
+    checkCombatTarget();
+
+    checkPatrolTarget();
 }
 
 // Called to bind functionality to input
@@ -54,7 +122,7 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
     Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
-void AEnemy::calculateHitDirection(const FVector& impact_point)
+void AEnemy::calculateHitDirection(const FVector& impact_point) const
 {
     // Calculate the hit position of the enemy.
     const FVector forward = GetActorForwardVector();
@@ -86,30 +154,63 @@ void AEnemy::calculateHitDirection(const FVector& impact_point)
     // UKismetSystemLibrary::DrawDebugArrow(this, GetActorLocation(), GetActorLocation() + to_hit * 120.f, 5.f,
     //                                      FColor::Green, 5.f);
 }
+
 void AEnemy::getHit_Implementation(const FVector& impact_point)
 {
     UE_LOG(LogTemp, Warning, TEXT("The enemy get hit."));
-    calculateHitDirection(impact_point);
+    if (attribute_component_ == nullptr) {
+        return;
+    }
+    if (health_bar_widget_) {
+        health_bar_widget_->SetVisibility(true);
+    }
 
-    // Play the hit animation.
-    if (hit_react_montage_ == nullptr) {
-        return;
-    }
-    USkeletalMeshComponent* skeletal_mesh = GetMesh();
-    if (skeletal_mesh == nullptr) {
-        return;
-    }
-    UAnimInstance* anim_instance = skeletal_mesh->GetAnimInstance();
-    if (anim_instance == nullptr) {
-    }
-    anim_instance->Montage_Play(hit_react_montage_);
+    // Todo: These codes should extract to a function.
+    if (attribute_component_->isAlive()) {
+        calculateHitDirection(impact_point);
 
-    // Show the hit particle.
-    if (!hit_particle_system_) {
-        return;
+        // Play the hit animation.
+        if (hit_react_montage_ == nullptr) {
+            return;
+        }
+        USkeletalMeshComponent* skeletal_mesh = GetMesh();
+        if (skeletal_mesh == nullptr) {
+            return;
+        }
+        UAnimInstance* anim_instance = skeletal_mesh->GetAnimInstance();
+        if (anim_instance == nullptr) {
+        }
+        anim_instance->Montage_Play(hit_react_montage_);
+
+        // Show the hit particle.
+        if (!hit_particle_system_) {
+            return;
+        }
+        UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), hit_particle_system_, impact_point);
+    } else {
+        // Play the death animation.
+        if (death_montage_ == nullptr) {
+            return;
+        }
+        USkeletalMeshComponent* skeletal_mesh = GetMesh();
+        if (skeletal_mesh == nullptr) {
+            return;
+        }
+        UAnimInstance* anim_instance = skeletal_mesh->GetAnimInstance();
+        if (anim_instance == nullptr) {
+            return;
+        }
+        anim_instance->Montage_Play(death_montage_);
+        death_pose_ = EEnemyDeathPose::EEDP_Death;
+
+        // Redress after death.
+        if (health_bar_widget_) {
+            health_bar_widget_->SetVisibility(false);
+        }
+        SetLifeSpan(3.0f);
     }
-    UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), hit_particle_system_, impact_point);
 }
+
 float AEnemy::TakeDamage(float DamageAmount, const struct FDamageEvent& DamageEvent, class AController* EventInstigator,
                          AActor* DamageCauser)
 {
@@ -119,5 +220,17 @@ float AEnemy::TakeDamage(float DamageAmount, const struct FDamageEvent& DamageEv
     }
     attribute_component_->receiveDamage(DamageAmount);
     health_bar_widget_->setHealthPercentage(attribute_component_->getHealthPercentage());
+
+    combat_target_ = EventInstigator->GetPawn();
     return DamageAmount;
+}
+
+bool AEnemy::inTargetRange(AActor* target, double radius)
+{
+    if (target == nullptr) {
+        return false;
+    }
+    const double distance_to_target = (target->GetActorLocation() - GetActorLocation()).Size();
+    DrawDebugSphere(GetWorld(), target->GetActorLocation(), 15.0f, 20, FColor::Green, false, 2);
+    return distance_to_target <= radius;
 }

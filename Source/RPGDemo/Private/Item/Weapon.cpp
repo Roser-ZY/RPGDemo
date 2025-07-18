@@ -113,6 +113,9 @@ void AWeapon::onBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor
                                          box_trace_start_->GetComponentRotation(), TraceTypeQuery1, false,
                                          ignored_actors_, EDrawDebugTrace::None, box_hit, true);
     if (box_hit.GetActor()) {
+        // Apply damage before execute interface function to calculate health before play the animation in getHit().
+        UGameplayStatics::ApplyDamage(box_hit.GetActor(), damage_, GetInstigator()->GetController(), this,
+                                      UDamageType::StaticClass());
 
         IHitInterface* hit_interface = Cast<IHitInterface>(box_hit.GetActor());
         if (hit_interface) {
@@ -121,8 +124,5 @@ void AWeapon::onBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor
             ignored_actors_.AddUnique(box_hit.GetActor());
         }
         createField(box_hit.ImpactPoint);
-
-        UGameplayStatics::ApplyDamage(box_hit.GetActor(), damage_, GetInstigator()->GetController(), this,
-                                      UDamageType::StaticClass());
     }
 }
