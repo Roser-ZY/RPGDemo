@@ -3,18 +3,18 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "BaseCharacter.h"
 #include "CharacterTypes.h"
-#include "GameFramework/Character.h"
 #include "Interfaces/HitInterface.h"
 #include "Enemy.generated.h"
 
-
+class UPawnSensingComponent;
 class AAIController;
 enum class EEnemyDeathPose : uint8;
 class UHealthBarComponent;
-class UAttributeComponent;
+
 UCLASS()
-class RPGDEMO_API AEnemy : public ACharacter, public IHitInterface {
+class RPGDEMO_API AEnemy : public ABaseCharacter {
     GENERATED_BODY()
 
 public:
@@ -25,17 +25,18 @@ public:
     virtual void Tick(float DeltaTime) override;
 
     // Called to bind functionality to input
-    virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+    virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
     void calculateHitDirection(const FVector& impact_point) const;
 
     virtual void getHit_Implementation(const FVector& impact_point) override;
 
-    virtual float TakeDamage(float DamageAmount, const struct FDamageEvent& DamageEvent,
-                             class AController* EventInstigator, AActor* DamageCauser) override;
+    virtual float TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator,
+                             AActor* DamageCauser) override;
 
     bool inTargetRange(AActor* target, double radius);
 
     void patrolTimeFinished();
+    void chaseCombatTarget();
 
 protected:
     // Called when the game starts or when spawned
@@ -47,20 +48,11 @@ protected:
     void moveToTarget(AActor* target);
     AActor* choosePatrolTarget();
 
-    UPROPERTY(EditAnywhere, Category = "Animation")
-    UAnimMontage* hit_react_montage_ = nullptr;
-
-    UPROPERTY(EditAnywhere, Category = "Animation")
-    UAnimMontage* death_montage_ = nullptr;
-
-    UPROPERTY(VisibleAnywhere, Category = "Attribute")
-    TObjectPtr<UAttributeComponent> attribute_component_;
+    UFUNCTION()
+    void pawnSeen(APawn* pawn);
 
     UPROPERTY(VisibleAnywhere, Category = "HUD")
     TObjectPtr<UHealthBarComponent> health_bar_widget_;
-
-    UPROPERTY(EditAnywhere, Category = "VisualEffects")
-    UParticleSystem* hit_particle_system_ = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     EEnemyDeathPose death_pose_ = EEnemyDeathPose::EEDP_Alive;
@@ -71,12 +63,15 @@ protected:
     UPROPERTY(EditAnywhere)
     double combat_radius_ = 500.0f;
 
+    UPROPERTY(EditAnywhere)
+    double attack_radius_ = 150.0f;
+
     /**
      * Navigation.
      */
     TObjectPtr<AAIController> enemy_ai_controller_;
 
-    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "AI Navigation", meta = (AllowPrivateAccess = true))
+    UPROPERTY(EditInstanceOnly, Category = "AI Navigation", meta = (AllowPrivateAccess = true))
     TObjectPtr<AActor> patrol_target_ = nullptr;
     UPROPERTY(EditInstanceOnly, Category = "AI Navigation")
     TArray<TObjectPtr<AActor>> patrol_targets_;
@@ -86,5 +81,11 @@ protected:
     FTimerHandle patrol_timer_;
     UPROPERTY(EditAnywhere, Category = "AI Navigation")
     float wait_min_ = 5.0f;
+    UPROPERTY(EditAnywhere, Category = "AI Navigation")
     float wait_max_ = 10.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Pawn Sensing")
+    TObjectPtr<UPawnSensingComponent> pawn_sensing_component_;
+
+    EEnemyState enemy_state_ = EEnemyState::EES_Patrolling;
 };

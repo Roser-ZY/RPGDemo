@@ -1,8 +1,10 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "DemoCharacterAnimInstance.h"
-#include "DemoCharacter.h"
+#include "Animation/DemoCharacterAnimInstance.h"
+
+
+#include "Character/DemoCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 

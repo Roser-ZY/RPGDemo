@@ -3,7 +3,7 @@
 
 #include "Item/Treasure.h"
 
-#include "DemoCharacter.h"
+#include "Character/DemoCharacter.h"
 #include "Kismet/GameplayStatics.h"
 
 void ATreasure::onSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
+#include "BaseCharacter.h"
 #include "InputActionValue.h"
 #include "Camera/CameraComponent.h"
 #include "CharacterTypes.h"
@@ -18,7 +18,7 @@ class USpringArmComponent;
 class UGroomComponent;
 
 UCLASS()
-class RPGDEMO_API ADemoCharacter : public ACharacter {
+class RPGDEMO_API ADemoCharacter : public ABaseCharacter {
     GENERATED_BODY()
 
 public:
@@ -38,9 +38,6 @@ public:
     }
 
     UFUNCTION(BlueprintCallable)
-    void setWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
-
-    UFUNCTION(BlueprintCallable)
     FORCEINLINE void setOverlappingItem(AItem* item)
     {
         overlapping_item_ = item;
@@ -54,10 +51,9 @@ protected:
     void look(const FInputActionValue& input_value);
     void jump(const FInputActionValue& input_value);
     void interact();
-    void attack();
+    virtual void attack() override;
 
-    UFUNCTION(BlueprintCallable)
-    void end_attack();
+    virtual void end_attack() override;
 
     UFUNCTION(BlueprintCallable)
     void unequip();
@@ -97,12 +93,7 @@ protected:
     ECharacterActionState action_state_ = ECharacterActionState::Unoccupied;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
-    UAnimMontage* attack_montage_ = nullptr;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
     UAnimMontage* equip_montage_ = nullptr;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Equipment")
-    AWeapon* equipped_weapon_ = nullptr;
 
 private:
     UPROPERTY(EditAnywhere, Category = "Camera")

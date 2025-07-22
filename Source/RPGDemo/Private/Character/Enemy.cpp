@@ -1,12 +1,14 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Enemy.h"
+
+#include "Character/Enemy.h"
 
 #include "AIController.h"
 #include "Component/AttributeComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Perception/PawnSensingComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "HUD/HealthBarComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -41,6 +43,11 @@ AEnemy::AEnemy()
     bUseControllerRotationPitch = false;
     bUseControllerRotationYaw = false;
     bUseControllerRotationRoll = false;
+
+    // Pawn sensing component.
+    pawn_sensing_component_ = CreateDefaultSubobject<UPawnSensingComponent>(TEXT("PawnSensing"));
+    pawn_sensing_component_->SightRadius = 4000.0f;
+    pawn_sensing_component_->SetPeripheralVisionAngle(45.0f);
 }
 
 // Called when the game starts or when spawned
@@ -54,6 +61,10 @@ void AEnemy::BeginPlay()
 
     enemy_ai_controller_ = Cast<AAIController>(GetController());
     moveToTarget(patrol_target_);
+
+    if (pawn_sensing_component_) {
+        pawn_sensing_component_->OnSeePawn.AddDynamic(this, &AEnemy::pawnSeen);
+    }
 }
 
 void AEnemy::moveToTarget(AActor* target)
@@ -84,18 +95,55 @@ AActor* AEnemy::choosePatrolTarget()
     return patrol_target_;
 }
 
+void AEnemy::pawnSeen(APawn* pawn)
+{
+    if (enemy_state_ == EEnemyState::EES_Chasing) {
+        return;
+    }
+
+    if (pawn->ActorHasTag(FName("DemoCharacter"))) {
+        // Clear the timer to avoid patrol when the enemy is chasing.
+        GetWorldTimerManager().ClearTimer(patrol_timer_);
+        combat_target_ = pawn;
+        if (enemy_state_ != EEnemyState::EES_Attacking) {
+            chaseCombatTarget();
+            UE_LOG(LogTemp, Warning, TEXT("See the pawn and now chasing."));
+        }
+    }
+}
+
 void AEnemy::patrolTimeFinished()
 {
     moveToTarget(patrol_target_);
 }
 
+void AEnemy::chaseCombatTarget()
+{
+    enemy_state_ = EEnemyState::EES_Chasing;
+    GetCharacterMovement()->MaxWalkSpeed = 300.0f;
+    moveToTarget(combat_target_);
+}
 void AEnemy::checkCombatTarget()
 {
     if (!inTargetRange(combat_target_, combat_radius_)) {
+        // Outside the target range, lose interest.
         combat_target_ = nullptr;
         if (health_bar_widget_) {
             health_bar_widget_->SetVisibility(false);
         }
+
+        enemy_state_ = EEnemyState::EES_Patrolling;
+        GetCharacterMovement()->MaxWalkSpeed = 150.0f;
+        moveToTarget(patrol_target_);
+        UE_LOG(LogTemp, Warning, TEXT("Lose interest."));
+    } else if (!inTargetRange(combat_target_, attack_radius_) && enemy_state_ != EEnemyState::EES_Chasing) {
+        // Outside attack range and inside combat range, chase character.
+        chaseCombatTarget();
+        UE_LOG(LogTemp, Warning, TEXT("Chase player."));
+    } else if (inTargetRange(combat_target_, attack_radius_) && enemy_state_ != EEnemyState::EES_Attacking) {
+        enemy_state_ = EEnemyState::EES_Attacking;
+        // Todo: Attack.
+        UE_LOG(LogTemp, Warning, TEXT("Attack player."));
     }
 }
 void AEnemy::checkPatrolTarget()
@@ -111,9 +159,11 @@ void AEnemy::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 
-    checkCombatTarget();
-
-    checkPatrolTarget();
+    if (enemy_state_ == EEnemyState::EES_Patrolling) {
+        checkPatrolTarget();
+    } else {
+        checkCombatTarget();
+    }
 }
 
 // Called to bind functionality to input
@@ -146,13 +196,6 @@ void AEnemy::calculateHitDirection(const FVector& impact_point) const
     if (GEngine) {
         GEngine->AddOnScreenDebugMessage(1, 5.f, FColor::Green, FString::Printf(TEXT("Theta: %f"), theta), true);
     }
-    // // Debug: Draw debug arrow.
-    // UKismetSystemLibrary::DrawDebugArrow(this, GetActorLocation(), GetActorLocation() + cross_product * 120.f, 5.f,
-    //                                      FColor::Blue, 5.f);
-    // UKismetSystemLibrary::DrawDebugArrow(this, GetActorLocation(), GetActorLocation() + forward * 120.f, 5.f,
-    //                                      FColor::Red, 5.f);
-    // UKismetSystemLibrary::DrawDebugArrow(this, GetActorLocation(), GetActorLocation() + to_hit * 120.f, 5.f,
-    //                                      FColor::Green, 5.f);
 }
 
 void AEnemy::getHit_Implementation(const FVector& impact_point)
@@ -169,18 +212,9 @@ void AEnemy::getHit_Implementation(const FVector& impact_point)
     if (attribute_component_->isAlive()) {
         calculateHitDirection(impact_point);
 
-        // Play the hit animation.
-        if (hit_react_montage_ == nullptr) {
+        if (!playMontage(hit_react_montage_)) {
             return;
         }
-        USkeletalMeshComponent* skeletal_mesh = GetMesh();
-        if (skeletal_mesh == nullptr) {
-            return;
-        }
-        UAnimInstance* anim_instance = skeletal_mesh->GetAnimInstance();
-        if (anim_instance == nullptr) {
-        }
-        anim_instance->Montage_Play(hit_react_montage_);
 
         // Show the hit particle.
         if (!hit_particle_system_) {
@@ -188,19 +222,9 @@ void AEnemy::getHit_Implementation(const FVector& impact_point)
         }
         UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), hit_particle_system_, impact_point);
     } else {
-        // Play the death animation.
-        if (death_montage_ == nullptr) {
+        if (!playMontage(death_montage_)) {
             return;
         }
-        USkeletalMeshComponent* skeletal_mesh = GetMesh();
-        if (skeletal_mesh == nullptr) {
-            return;
-        }
-        UAnimInstance* anim_instance = skeletal_mesh->GetAnimInstance();
-        if (anim_instance == nullptr) {
-            return;
-        }
-        anim_instance->Montage_Play(death_montage_);
         death_pose_ = EEnemyDeathPose::EEDP_Death;
 
         // Redress after death.
@@ -214,14 +238,13 @@ void AEnemy::getHit_Implementation(const FVector& impact_point)
 float AEnemy::TakeDamage(float DamageAmount, const struct FDamageEvent& DamageEvent, class AController* EventInstigator,
                          AActor* DamageCauser)
 {
-    if (attribute_component_ == nullptr || health_bar_widget_ == nullptr) {
-        UE_LOG(LogTemp, Error, TEXT("Components are not set."));
-        return 0.0f;
+    if (attribute_component_ && health_bar_widget_) {
+        attribute_component_->receiveDamage(DamageAmount);
+        health_bar_widget_->setHealthPercentage(attribute_component_->getHealthPercentage());
     }
-    attribute_component_->receiveDamage(DamageAmount);
-    health_bar_widget_->setHealthPercentage(attribute_component_->getHealthPercentage());
 
     combat_target_ = EventInstigator->GetPawn();
+    chaseCombatTarget();
     return DamageAmount;
 }
 
@@ -231,6 +254,5 @@ bool AEnemy::inTargetRange(AActor* target, double radius)
         return false;
     }
     const double distance_to_target = (target->GetActorLocation() - GetActorLocation()).Size();
-    DrawDebugSphere(GetWorld(), target->GetActorLocation(), 15.0f, 20, FColor::Green, false, 2);
     return distance_to_target <= radius;
 }

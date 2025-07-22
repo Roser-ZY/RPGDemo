@@ -1,15 +1,15 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "DemoCharacter.h"
+#include "Character/DemoCharacter.h"
 
-#include "DemoCharacterAnimInstance.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GroomComponent.h"
+#include "Animation/DemoCharacterAnimInstance.h"
 #include "Components/CapsuleComponent.h"
 #include "Item/Weapon.h"
 
@@ -50,20 +50,12 @@ ADemoCharacter::ADemoCharacter()
     eyebrows_component_->AttachmentName = FString("head");
 }
 
-void ADemoCharacter::setWeaponCollisionEnabled(ECollisionEnabled::Type collision_enabled)
-{
-    if (equipped_weapon_) {
-        equipped_weapon_->clearIgnoredActors();
-        equipped_weapon_->setWeaponCollisionEnabled(collision_enabled);
-    }
-}
-
 // Called when the game starts or when spawned
 void ADemoCharacter::BeginPlay()
 {
     Super::BeginPlay();
 
-    // Binde delegates.
+    // Bind delegates.
     UCapsuleComponent* capsule_component = GetCapsuleComponent();
     if (capsule_component) {
         capsule_component->OnComponentBeginOverlap.AddDynamic(this, &ADemoCharacter::onCapsuleBeginOverlap);
@@ -85,6 +77,9 @@ void ADemoCharacter::BeginPlay()
     } else {
         UE_LOG(LogTemp, Error, TEXT("Input mapping context is not set."));
     }
+
+    // Add tags.
+    Tags.Add(FName("DemoCharacter"));
 }
 
 void ADemoCharacter::move(const FInputActionValue& input_value)
@@ -148,31 +143,16 @@ void ADemoCharacter::interact()
             return;
         }
 
-        // Equip and unequip.
-        // Check the AnimInstance.
-        USkeletalMeshComponent* skeletal_mesh_component = GetMesh();
-        if (skeletal_mesh_component == nullptr) {
-            UE_LOG(LogTemp, Error, TEXT("The skeletal mesh is not ready!"));
-            return;
-        }
-
-        UDemoCharacterAnimInstance* anim_instance =
-            Cast<UDemoCharacterAnimInstance>(skeletal_mesh_component->GetAnimInstance());
-        if (anim_instance == nullptr) {
-            UE_LOG(LogTemp, Error, TEXT("The animation of the skeletal mesh is not ready!"));
-            return;
-        }
-
-        if (action_state_ == ECharacterActionState::Unoccupied) {
-            anim_instance->Montage_Play(equip_montage_);
-            if (current_state_ == ECharacterState::EquippedOneHandWeapon) {
-                UE_LOG(LogTemp, Warning, TEXT("Unequip the weapon."));
-                anim_instance->Montage_JumpToSection(FName("Unequip"));
+        if (current_state_ == ECharacterState::EquippedOneHandWeapon) {
+            UE_LOG(LogTemp, Warning, TEXT("Unequip the weapon."));
+            if (playMontage(equip_montage_, FName("Unequip"))) {
                 current_state_ = ECharacterState::Unequipped;
                 action_state_ = ECharacterActionState::EquippingWeapon;
-            } else if (current_state_ == ECharacterState::Unequipped) {
-                UE_LOG(LogTemp, Warning, TEXT("Equip the weapon."));
-                anim_instance->Montage_JumpToSection(FName("Equip"));
+            }
+
+        } else if (current_state_ == ECharacterState::Unequipped) {
+            UE_LOG(LogTemp, Warning, TEXT("Equip the weapon."));
+            if (playMontage(equip_montage_, FName("Equip"))) {
                 current_state_ = ECharacterState::EquippedOneHandWeapon;
                 action_state_ = ECharacterActionState::EquippingWeapon;
             }
@@ -185,39 +165,14 @@ void ADemoCharacter::attack()
     UE_LOG(LogTemp, Warning, TEXT("Attacking."));
 
     // Return if the character does not equip an one-hand weapon.
-    if (current_state_ != ECharacterState::EquippedOneHandWeapon) {
-        return;
-    }
-    // Return if the character is occupied.
-    if (action_state_ != ECharacterActionState::Unoccupied) {
+    if (current_state_ != ECharacterState::EquippedOneHandWeapon ||
+        action_state_ != ECharacterActionState::Unoccupied) {
         return;
     }
 
-    if (attack_montage_ == nullptr) {
-        UE_LOG(LogTemp, Error, TEXT("The attack montage is not ready!"));
-        return;
+    if (playMontage(attack_montage_)) {
+        action_state_ = ECharacterActionState::Attacking;
     }
-
-    USkeletalMeshComponent* skeletal_mesh_component = GetMesh();
-    if (skeletal_mesh_component == nullptr) {
-        UE_LOG(LogTemp, Error, TEXT("The skeletal mesh is not ready!"));
-        return;
-    }
-
-    UDemoCharacterAnimInstance* anim_instance =
-        Cast<UDemoCharacterAnimInstance>(skeletal_mesh_component->GetAnimInstance());
-    if (anim_instance == nullptr) {
-        UE_LOG(LogTemp, Error, TEXT("The animation of the skeletal mesh is not ready!"));
-        return;
-    }
-
-    float seconds = anim_instance->Montage_Play(attack_montage_);
-    if (seconds <= 0.0f) {
-        UE_LOG(LogTemp, Error, TEXT("Failed to play the attack montage."));
-        return;
-    }
-
-    action_state_ = ECharacterActionState::Attacking;
 }
 
 void ADemoCharacter::end_attack()
