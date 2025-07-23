@@ -38,12 +38,27 @@ public:
     void patrolTimeFinished();
     void chaseCombatTarget();
 
+    virtual void Destroyed() override;
+
 protected:
     // Called when the game starts or when spawned
     virtual void BeginPlay() override;
 
     void checkCombatTarget();
     void checkPatrolTarget();
+
+    void hideHealthBar();
+    void showHealthBar();
+
+    void loseInterest();
+    void startPatrolling();
+    void clearPatrolTimer();
+
+    void startAttackTimer();
+    void clearAttackTimer();
+
+    virtual void attack() override;
+    virtual void end_attack() override;
 
     void moveToTarget(AActor* target);
     AActor* choosePatrolTarget();
@@ -64,7 +79,7 @@ protected:
     double combat_radius_ = 500.0f;
 
     UPROPERTY(EditAnywhere)
-    double attack_radius_ = 150.0f;
+    double attack_radius_ = 200.0f;
 
     /**
      * Navigation.
@@ -76,7 +91,7 @@ protected:
     UPROPERTY(EditInstanceOnly, Category = "AI Navigation")
     TArray<TObjectPtr<AActor>> patrol_targets_;
     UPROPERTY(EditAnywhere, Category = "AI Navigation")
-    double patrol_radius_ = 200.0f;
+    double patrol_radius_ = 150.0f;
 
     FTimerHandle patrol_timer_;
     UPROPERTY(EditAnywhere, Category = "AI Navigation")
@@ -84,8 +99,23 @@ protected:
     UPROPERTY(EditAnywhere, Category = "AI Navigation")
     float wait_max_ = 10.0f;
 
+    UPROPERTY(EditAnywhere, Category = "AI Navigation")
+    float patrol_speed_ = 125.0f;
+    UPROPERTY(EditAnywhere, Category = "AI Navigation")
+    float chase_speed_ = 300.0f;
+
+    FTimerHandle attack_timer_;
+    UPROPERTY(EditAnywhere, Category = "Combat")
+    float attack_min_ = 0.7f;
+    UPROPERTY(EditAnywhere, Category = "Combat")
+    float attack_max_ = 1.2f;
+
     UPROPERTY(EditAnywhere, Category = "Pawn Sensing")
     TObjectPtr<UPawnSensingComponent> pawn_sensing_component_;
 
+    UPROPERTY(BlueprintReadOnly)
     EEnemyState enemy_state_ = EEnemyState::EES_Patrolling;
+
+    UPROPERTY(EditAnywhere)
+    TSubclassOf<AWeapon> weapon_class_;
 };
