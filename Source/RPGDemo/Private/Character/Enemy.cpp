@@ -6,7 +6,6 @@
 
 #include "AIController.h"
 #include "Component/AttributeComponent.h"
-#include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Perception/PawnSensingComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -23,27 +22,15 @@ AEnemy::AEnemy()
     PrimaryActorTick.bCanEverTick = true;
 
     // Set the attributes of collision.
-    USkeletalMeshComponent* skeletal_mesh = GetMesh();
-    if (skeletal_mesh) {
-        skeletal_mesh->SetCollisionObjectType(ECC_WorldDynamic);
-        skeletal_mesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
-        skeletal_mesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
-        skeletal_mesh->SetGenerateOverlapEvents(true);
-        UCapsuleComponent* capsule_component = GetCapsuleComponent();
-        if (capsule_component) {
-            capsule_component->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
-        }
-    }
+    initCollision();
+
+    disableRotationWithController();
+    rotateToMovementDirection();
 
     // The attribute component do not need attach to any component.
     attribute_component_ = CreateDefaultSubobject<UAttributeComponent>(TEXT("Attribute"));
     health_bar_widget_ = CreateDefaultSubobject<UHealthBarComponent>(TEXT("Health Bar"));
     health_bar_widget_->SetupAttachment(RootComponent);
-
-    GetCharacterMovement()->bOrientRotationToMovement = true;
-    bUseControllerRotationPitch = false;
-    bUseControllerRotationYaw = false;
-    bUseControllerRotationRoll = false;
 
     // Pawn sensing component.
     pawn_sensing_component_ = CreateDefaultSubobject<UPawnSensingComponent>(TEXT("PawnSensing"));
@@ -180,7 +167,7 @@ void AEnemy::checkPatrolTarget()
     }
     if (inTargetRange(patrol_target_, patrol_radius_)) {
         patrol_target_ = choosePatrolTarget();
-        const float wait_time = FMath::RandRange(wait_min_, wait_max_);
+        const float wait_time = FMath::RandRange(patrol_wait_min_, patrol_wait_max_);
         GetWorldTimerManager().SetTimer(patrol_timer_, this, &AEnemy::patrolTimeFinished, wait_time);
     }
 }
@@ -258,12 +245,6 @@ void AEnemy::Tick(float DeltaTime)
     } else {
         checkCombatTarget();
     }
-}
-
-// Called to bind functionality to input
-void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-    Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
 void AEnemy::calculateHitDirection(const FVector& impact_point) const
@@ -349,4 +330,16 @@ bool AEnemy::inTargetRange(AActor* target, double radius)
     }
     const double distance_to_target = (target->GetActorLocation() - GetActorLocation()).Size();
     return distance_to_target <= radius;
+}
+
+
+void AEnemy::initCollision()
+{
+    USkeletalMeshComponent* skeletal_mesh = GetMesh();
+    if (skeletal_mesh) {
+        skeletal_mesh->SetCollisionObjectType(ECC_WorldDynamic);
+        skeletal_mesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+        skeletal_mesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+        skeletal_mesh->SetGenerateOverlapEvents(true);
+    }
 }

@@ -9,7 +9,6 @@
 #include "CharacterTypes.h"
 #include "DemoCharacter.generated.h"
 
-
 class AWeapon;
 class UInputMappingContext;
 class UInputAction;
@@ -22,15 +21,10 @@ class RPGDEMO_API ADemoCharacter : public ABaseCharacter {
     GENERATED_BODY()
 
 public:
-    // Sets default values for this character's properties
     ADemoCharacter();
 
-
-    // Called every frame
     virtual void Tick(float DeltaTime) override;
-
-    // Called to bind functionality to input
-    virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+    virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
     ECharacterState get_current_state()
     {
@@ -50,17 +44,17 @@ protected:
     void move(const FInputActionValue& input_value);
     void look(const FInputActionValue& input_value);
     void jump(const FInputActionValue& input_value);
+    void pickUpAndEquipWeapon(AWeapon* weapon);
+    void toggleEquippedWeaponState();
     void interact();
-    virtual void attack() override;
 
+    virtual void attack() override;
     virtual void end_attack() override;
 
     UFUNCTION(BlueprintCallable)
     void unequip();
-
     UFUNCTION(BlueprintCallable)
     void equip();
-
     UFUNCTION(BlueprintCallable)
     void end_equip();
 
@@ -68,7 +62,6 @@ protected:
     virtual void onCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
                                        const FHitResult& SweepResult);
-
     UFUNCTION()
     virtual void onCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                      UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
@@ -77,15 +70,15 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Input")
     UInputMappingContext* input_mapping_context_ = nullptr;
     UPROPERTY(EditAnywhere, Category = "Input")
-    UInputAction* movement_action_ = nullptr;
+    TObjectPtr<UInputAction> movement_action_ = nullptr;
     UPROPERTY(EditAnywhere, Category = "Input")
-    UInputAction* look_action_ = nullptr;
+    TObjectPtr<UInputAction> look_action_ = nullptr;
     UPROPERTY(EditAnywhere, Category = "Input")
-    UInputAction* jump_action_ = nullptr;
+    TObjectPtr<UInputAction> jump_action_ = nullptr;
     UPROPERTY(EditAnywhere, Category = "Input")
-    UInputAction* attack_action_ = nullptr;
+    TObjectPtr<UInputAction> attack_action_ = nullptr;
     UPROPERTY(EditAnywhere, Category = "Input")
-    UInputAction* interact_action_ = nullptr;
+    TObjectPtr<UInputAction> interact_action_ = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
     ECharacterState current_state_ = ECharacterState::Unequipped;
@@ -96,16 +89,19 @@ protected:
     UAnimMontage* equip_montage_ = nullptr;
 
 private:
+    void bindDelegates();
+    void addMappingContext();
+
     UPROPERTY(EditAnywhere, Category = "Camera")
-    USpringArmComponent* spring_arm_component_ = nullptr;
+    TObjectPtr<USpringArmComponent> spring_arm_component_ = nullptr;
     UPROPERTY(EditAnywhere, Category = "Camera")
-    UCameraComponent* camera_component_ = nullptr;
+    TObjectPtr<UCameraComponent> camera_component_ = nullptr;
 
     UPROPERTY(VisibleAnywhere, Category = "Appearance")
-    UGroomComponent* hair_component_ = nullptr;
+    TObjectPtr<UGroomComponent> hair_component_ = nullptr;
     UPROPERTY(VisibleAnywhere, Category = "Appearance")
-    UGroomComponent* eyebrows_component_ = nullptr;
+    TObjectPtr<UGroomComponent> eyebrows_component_ = nullptr;
 
     UPROPERTY(VisibleInstanceOnly)
-    AItem* overlapping_item_ = nullptr;
+    TObjectPtr<AItem> overlapping_item_ = nullptr;
 };

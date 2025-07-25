@@ -7,7 +7,6 @@
 #include "EnhancedInputSubsystems.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
 #include "GroomComponent.h"
 #include "Animation/DemoCharacterAnimInstance.h"
 #include "Components/CapsuleComponent.h"
@@ -20,16 +19,8 @@ ADemoCharacter::ADemoCharacter()
     // it.
     PrimaryActorTick.bCanEverTick = true;
 
-    // Set the default behavior.
-    // Do not rotate the character with the controller.
-    bUseControllerRotationPitch = false;
-    bUseControllerRotationYaw = false;
-    bUseControllerRotationRoll = false;
-
-    // Rotate to the movement direction.
-    UCharacterMovementComponent* character_movement = GetCharacterMovement();
-    character_movement->bOrientRotationToMovement = true;
-    character_movement->RotationRate = FRotator(0.0f, 400.0f, 0.0f);
+    disableRotationWithController();
+    rotateToMovementDirection();
 
     // Create components.
     spring_arm_component_ = CreateDefaultSubobject<USpringArmComponent>(TEXT("Spring Arm"));
@@ -50,19 +41,17 @@ ADemoCharacter::ADemoCharacter()
     eyebrows_component_->AttachmentName = FString("head");
 }
 
-// Called when the game starts or when spawned
-void ADemoCharacter::BeginPlay()
+void ADemoCharacter::bindDelegates()
 {
-    Super::BeginPlay();
-
-    // Bind delegates.
     UCapsuleComponent* capsule_component = GetCapsuleComponent();
     if (capsule_component) {
         capsule_component->OnComponentBeginOverlap.AddDynamic(this, &ADemoCharacter::onCapsuleBeginOverlap);
         capsule_component->OnComponentEndOverlap.AddDynamic(this, &ADemoCharacter::onCapsuleEndOverlap);
     }
+}
 
-    // Add the input mapping context.
+void ADemoCharacter::addMappingContext()
+{
     if (input_mapping_context_) {
         APlayerController* player_controller = Cast<APlayerController>(Controller);
         if (player_controller) {
@@ -77,8 +66,16 @@ void ADemoCharacter::BeginPlay()
     } else {
         UE_LOG(LogTemp, Error, TEXT("Input mapping context is not set."));
     }
+}
 
-    // Add tags.
+// Called when the game starts or when spawned
+void ADemoCharacter::BeginPlay()
+{
+    Super::BeginPlay();
+
+    bindDelegates();
+    addMappingContext();
+
     Tags.Add(FName("DemoCharacter"));
 }
 
@@ -101,8 +98,6 @@ void ADemoCharacter::move(const FInputActionValue& input_value)
         const FVector2D movement_vector = input_value.Get<FVector2D>();
         AddMovementInput(forward_direction, movement_vector.Y);
         AddMovementInput(right_direction, movement_vector.X);
-
-        // UE_LOG(LogTemp, Display, TEXT("Forward: %f, Right: %f"), movement_vector.Y, movement_vector.X);
     }
 }
 
@@ -124,39 +119,48 @@ void ADemoCharacter::jump(const FInputActionValue& input_value)
     }
 }
 
+void ADemoCharacter::pickUpAndEquipWeapon(AWeapon* weapon)
+{
+    if (weapon == nullptr) {
+        return;
+    }
+    weapon->equipTo(GetMesh(), FName("right_hand_socket"), this, this);
+    // Set the weapon's owner.
+    // weapon->SetOwner(this);
+    // weapon->SetInstigator(this);
+    equipped_weapon_ = weapon;
+    current_state_ = ECharacterState::EquippedOneHandWeapon;
+    overlapping_item_ = nullptr;
+}
+
+void ADemoCharacter::toggleEquippedWeaponState()
+{
+    if (equipped_weapon_ == nullptr || action_state_ != ECharacterActionState::Unoccupied) {
+        return;
+    }
+
+    bool canDisarm = (current_state_ == ECharacterState::EquippedOneHandWeapon);
+    bool canArm = (current_state_ == ECharacterState::Unequipped);
+    if (canDisarm) {
+        if (playMontage(equip_montage_, FName("Unequip"))) {
+            current_state_ = ECharacterState::Unequipped;
+            action_state_ = ECharacterActionState::EquippingWeapon;
+        }
+    } else if (canArm) {
+        if (playMontage(equip_montage_, FName("Equip"))) {
+            current_state_ = ECharacterState::EquippedOneHandWeapon;
+            action_state_ = ECharacterActionState::EquippingWeapon;
+        }
+    }
+}
 void ADemoCharacter::interact()
 {
     // Equip only one weapon.
     AWeapon* weapon = Cast<AWeapon>(overlapping_item_);
-    if (weapon && !equipped_weapon_) {
-        weapon->equipTo(GetMesh(), FName("right_hand_socket"), this, this);
-        // Set the weapon's owner.
-        // weapon->SetOwner(this);
-        // weapon->SetInstigator(this);
-        equipped_weapon_ = weapon;
-        current_state_ = ECharacterState::EquippedOneHandWeapon;
-        overlapping_item_ = nullptr;
-
-        UE_LOG(LogTemp, Warning, TEXT("First equip the weapon."));
+    if (weapon) {
+        pickUpAndEquipWeapon(weapon);
     } else if (equipped_weapon_) {
-        if (action_state_ != ECharacterActionState::Unoccupied) {
-            return;
-        }
-
-        if (current_state_ == ECharacterState::EquippedOneHandWeapon) {
-            UE_LOG(LogTemp, Warning, TEXT("Unequip the weapon."));
-            if (playMontage(equip_montage_, FName("Unequip"))) {
-                current_state_ = ECharacterState::Unequipped;
-                action_state_ = ECharacterActionState::EquippingWeapon;
-            }
-
-        } else if (current_state_ == ECharacterState::Unequipped) {
-            UE_LOG(LogTemp, Warning, TEXT("Equip the weapon."));
-            if (playMontage(equip_montage_, FName("Equip"))) {
-                current_state_ = ECharacterState::EquippedOneHandWeapon;
-                action_state_ = ECharacterActionState::EquippingWeapon;
-            }
-        }
+        toggleEquippedWeaponState();
     }
 }
 
@@ -164,9 +168,9 @@ void ADemoCharacter::attack()
 {
     UE_LOG(LogTemp, Warning, TEXT("Attacking."));
 
-    // Return if the character does not equip an one-hand weapon.
-    if (current_state_ != ECharacterState::EquippedOneHandWeapon ||
-        action_state_ != ECharacterActionState::Unoccupied) {
+    bool characterCanNotAttack =
+        current_state_ != ECharacterState::EquippedOneHandWeapon || action_state_ != ECharacterActionState::Unoccupied;
+    if (characterCanNotAttack) {
         return;
     }
 

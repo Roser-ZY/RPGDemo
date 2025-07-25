@@ -20,23 +20,24 @@ public:
 
     // Called every frame
     virtual void Tick(float DeltaTime) override;
+    virtual float TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator,
+                             AActor* DamageCauser) override;
 
     UFUNCTION(BlueprintCallable)
     void setWeaponCollisionEnabled(ECollisionEnabled::Type collision_enabled);
-
-    virtual float TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator,
-                             AActor* DamageCauser) override;
 
 protected:
     // Called when the game starts or when spawned
     virtual void BeginPlay() override;
 
     virtual void attack();
-
     UFUNCTION(BlueprintCallable)
     virtual void end_attack();
 
     bool playMontage(UAnimMontage* montage, FName seciton_name = NAME_None);
+
+    void disableRotationWithController();
+    void rotateToMovementDirection();
 
     UPROPERTY(VisibleAnywhere, Category = "Attribute")
     TObjectPtr<UAttributeComponent> attribute_component_;

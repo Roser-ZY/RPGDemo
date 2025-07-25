@@ -3,7 +3,8 @@
 
 #include "Character/BaseCharacter.h"
 
-#include "Animation/DemoCharacterAnimInstance.h"
+#include "Components/CapsuleComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Item/Weapon.h"
 
 // Sets default values
@@ -12,6 +13,11 @@ ABaseCharacter::ABaseCharacter()
     // Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need
     // it.
     PrimaryActorTick.bCanEverTick = true;
+
+    UCapsuleComponent* capsule_component = GetCapsuleComponent();
+    if (capsule_component) {
+        capsule_component->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+    }
 }
 
 // Called when the game starts or when spawned
@@ -76,4 +82,18 @@ bool ABaseCharacter::playMontage(UAnimMontage* montage, FName section_name)
         anim_instance->Montage_JumpToSection(section_name);
     }
     return true;
+}
+
+void ABaseCharacter::disableRotationWithController()
+{
+    bUseControllerRotationPitch = false;
+    bUseControllerRotationYaw = false;
+    bUseControllerRotationRoll = false;
+}
+
+void ABaseCharacter::rotateToMovementDirection()
+{
+    UCharacterMovementComponent* character_movement = GetCharacterMovement();
+    character_movement->bOrientRotationToMovement = true;
+    character_movement->RotationRate = FRotator(0.0f, 400.0f, 0.0f);
 }
