@@ -78,51 +78,55 @@ void AWeapon::BeginPlay()
     }
 }
 
-
-void AWeapon::onSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                                   UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
-                                   const FHitResult& SweepResult)
+void AWeapon::executeGetHit(const FHitResult& box_hit)
 {
-    Super::onSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
-    UE_LOG(LogTemp, Warning, TEXT("Overlapped with %s."), *OtherActor->GetName());
-    UE_LOG(LogTemp, Warning, TEXT("Overlapped with %s."), *OtherComp->GetName());
-}
+    AActor* hit_actor = box_hit.GetActor();
 
-void AWeapon::onSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                                 UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+    if (hit_actor) {
+        IHitInterface* hit_interface = Cast<IHitInterface>(hit_actor);
+        if (hit_interface) {
+            hit_interface->Execute_getHit(hit_actor, box_hit.ImpactPoint);
+        }
+    }
+}
+bool AWeapon::otherActorIsSameType(AActor* other_actor)
 {
-    Super::onSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
-}
+    AActor* owner = GetOwner();
+    if (owner == nullptr) {
+        return false;
+    }
 
+    return owner->ActorHasTag(TEXT("Enemy")) && other_actor->ActorHasTag(TEXT("Enemy"));
+}
 void AWeapon::onBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                 UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
                                 const FHitResult& SweepResult)
 {
+    AActor* owner = GetOwner();
+    if (owner == nullptr || otherActorIsSameType(OtherActor)) {
+        return;
+    }
+
     const FVector start = box_trace_start_->GetComponentLocation();
     const FVector end = box_trace_end_->GetComponentLocation();
+
     FHitResult box_hit;
+    UKismetSystemLibrary::BoxTraceSingle(
+        this, start, end, box_trace_extent_, box_trace_start_->GetComponentRotation(), TraceTypeQuery1, false,
+        ignored_actors_, show_debug_box_ ? EDrawDebugTrace::ForDuration : EDrawDebugTrace::None, box_hit, true);
 
-    // // Debug: Log the name of the overlapped component and actor.
-    // if (OverlappedComponent) {
-    //     UE_LOG(LogTemp, Warning, TEXT("%s"), *OtherComp->GetName());
-    //     UE_LOG(LogTemp, Warning, TEXT("%s"), *OtherActor->GetName());
-    //     DrawDebugPoint(GetWorld(), SweepResult.ImpactPoint, 10.0f, FColor::Yellow, false, 2.0f);
-    // }
+    createField(box_hit.ImpactPoint);
 
-    UKismetSystemLibrary::BoxTraceSingle(this, start, end, FVector(5.0f, 5.0f, 5.0f),
-                                         box_trace_start_->GetComponentRotation(), TraceTypeQuery1, false,
-                                         ignored_actors_, EDrawDebugTrace::None, box_hit, true);
-    if (box_hit.GetActor()) {
-        // Apply damage before execute interface function to calculate health before play the animation in getHit().
-        UGameplayStatics::ApplyDamage(box_hit.GetActor(), damage_, GetInstigator()->GetController(), this,
-                                      UDamageType::StaticClass());
-
-        IHitInterface* hit_interface = Cast<IHitInterface>(box_hit.GetActor());
-        if (hit_interface) {
-            hit_interface->Execute_getHit(box_hit.GetActor(), box_hit.ImpactPoint);
-            // Ignore the hit actor to avoid multiple hit.
-            ignored_actors_.AddUnique(box_hit.GetActor());
+    AActor* hit_actor = box_hit.GetActor();
+    if (hit_actor) {
+        if (otherActorIsSameType(hit_actor)) {
+            return;
         }
-        createField(box_hit.ImpactPoint);
+        // Apply damage before execute interface function to calculate health before play the animation in getHit().
+        UGameplayStatics::ApplyDamage(hit_actor, damage_, GetInstigator()->GetController(), this,
+                                      UDamageType::StaticClass());
+        executeGetHit(box_hit);
+        // Ignore the hit actor to avoid multiple hit.
+        ignored_actors_.AddUnique(hit_actor);
     }
 }

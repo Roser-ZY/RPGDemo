@@ -6,6 +6,7 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Item/Weapon.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 ABaseCharacter::ABaseCharacter()
@@ -45,6 +46,32 @@ void ABaseCharacter::setWeaponCollisionEnabled(ECollisionEnabled::Type collision
     if (equipped_weapon_) {
         equipped_weapon_->clearIgnoredActors();
         equipped_weapon_->setWeaponCollisionEnabled(collision_enabled);
+    }
+}
+
+void ABaseCharacter::calculateHitDirection(const FVector& impact_point) const
+{
+    // Calculate the hit position of the enemy.
+    const FVector forward = GetActorForwardVector();
+    const FVector impact_horizontal_with_actor(impact_point.X, impact_point.Y, GetActorLocation().Z);
+    const FVector to_hit = (impact_horizontal_with_actor - GetActorLocation()).GetSafeNormal();
+
+    // forward * to_hit = |forward||to_hit| * cos(theta)
+    // |forward| = 1, |to_hit| = 1, so forward * to_hit = cos(theta)
+    const double cos_theta = FVector::DotProduct(forward, to_hit);
+    // Take the inverse cosine (arc - cosine) of cos(theta) to get theta.
+    double theta = FMath::Acos(cos_theta);
+    // Convert from radians to degrees.
+    theta = FMath::RadiansToDegrees(theta);
+
+    // If cross_product points down, theta should be negative.
+    const FVector cross_product = FVector::CrossProduct(forward, to_hit);
+    if (cross_product.Z < 0) {
+        theta *= -1.f;
+    }
+
+    if (GEngine) {
+        GEngine->AddOnScreenDebugMessage(1, 5.f, FColor::Green, FString::Printf(TEXT("Theta: %f"), theta), true);
     }
 }
 
@@ -96,4 +123,12 @@ void ABaseCharacter::rotateToMovementDirection()
     UCharacterMovementComponent* character_movement = GetCharacterMovement();
     character_movement->bOrientRotationToMovement = true;
     character_movement->RotationRate = FRotator(0.0f, 400.0f, 0.0f);
+}
+
+void ABaseCharacter::spawnHitParticles(const FVector& impact_point)
+{
+    // Show the hit particle.
+    if (hit_particle_system_) {
+        UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), hit_particle_system_, impact_point);
+    }
 }

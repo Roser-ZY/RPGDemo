@@ -43,6 +43,8 @@ void AEnemy::BeginPlay()
 {
     Super::BeginPlay();
 
+    Tags.Add(FName("Enemy"));
+
     if (health_bar_widget_) {
         health_bar_widget_->SetVisibility(false);
     }
@@ -97,7 +99,7 @@ void AEnemy::pawnSeen(APawn* pawn)
     const bool enemy_should_chase_target =
         enemy_state_ != EEnemyState::EES_Chasing && enemy_state_ != EEnemyState::EES_Engaged &&
         enemy_state_ != EEnemyState::EES_Attacking && enemy_state_ != EEnemyState::EES_Dead &&
-        pawn->ActorHasTag(FName("DemoCharacter"));
+        pawn->ActorHasTag(FName("EngageableTarget"));
 
     if (enemy_should_chase_target) {
         // Clear the timer to avoid patrol when the enemy is chasing.
@@ -247,34 +249,12 @@ void AEnemy::Tick(float DeltaTime)
     }
 }
 
-void AEnemy::calculateHitDirection(const FVector& impact_point) const
-{
-    // Calculate the hit position of the enemy.
-    const FVector forward = GetActorForwardVector();
-    const FVector impact_horizontal_with_actor(impact_point.X, impact_point.Y, GetActorLocation().Z);
-    const FVector to_hit = (impact_horizontal_with_actor - GetActorLocation()).GetSafeNormal();
-
-    // forward * to_hit = |forward||to_hit| * cos(theta)
-    // |forward| = 1, |to_hit| = 1, so forward * to_hit = cos(theta)
-    const double cos_theta = FVector::DotProduct(forward, to_hit);
-    // Take the inverse cosine (arc - cosine) of cos(theta) to get theta.
-    double theta = FMath::Acos(cos_theta);
-    // Convert from radians to degrees.
-    theta = FMath::RadiansToDegrees(theta);
-
-    // If cross_product points down, theta should be negative.
-    const FVector cross_product = FVector::CrossProduct(forward, to_hit);
-    if (cross_product.Z < 0) {
-        theta *= -1.f;
-    }
-
-    if (GEngine) {
-        GEngine->AddOnScreenDebugMessage(1, 5.f, FColor::Green, FString::Printf(TEXT("Theta: %f"), theta), true);
-    }
-}
-
 void AEnemy::getHit_Implementation(const FVector& impact_point)
 {
+    if (enemy_state_ == EEnemyState::EES_Dead) {
+        return;
+    }
+
     UE_LOG(LogTemp, Warning, TEXT("The enemy get hit."));
     showHealthBar();
 
@@ -285,20 +265,10 @@ void AEnemy::getHit_Implementation(const FVector& impact_point)
     // Todo: These codes should extract to a function.
     if (attribute_component_->isAlive()) {
         calculateHitDirection(impact_point);
-
-        if (!playMontage(hit_react_montage_)) {
-            return;
-        }
-
-        // Show the hit particle.
-        if (!hit_particle_system_) {
-            return;
-        }
-        UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), hit_particle_system_, impact_point);
+        playMontage(hit_react_montage_);
+        spawnHitParticles(impact_point);
     } else {
-        if (!playMontage(death_montage_)) {
-            return;
-        }
+        playMontage(death_montage_);
         death_pose_ = EEnemyDeathPose::EEDP_Death;
         enemy_state_ = EEnemyState::EES_Dead;
 
@@ -311,6 +281,9 @@ void AEnemy::getHit_Implementation(const FVector& impact_point)
 float AEnemy::TakeDamage(float DamageAmount, const struct FDamageEvent& DamageEvent, class AController* EventInstigator,
                          AActor* DamageCauser)
 {
+    if (enemy_state_ == EEnemyState::EES_Dead) {
+        return 0.0f;
+    }
     if (attribute_component_ && health_bar_widget_) {
         attribute_component_->receiveDamage(DamageAmount);
         health_bar_widget_->setHealthPercentage(attribute_component_->getHealthPercentage());

@@ -25,6 +25,8 @@ public:
 
     virtual void Tick(float DeltaTime) override;
     virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+    
+    virtual void getHit_Implementation(const FVector& impact_point) override;
 
     ECharacterState get_current_state()
     {

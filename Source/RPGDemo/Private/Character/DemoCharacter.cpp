@@ -73,10 +73,10 @@ void ADemoCharacter::BeginPlay()
 {
     Super::BeginPlay();
 
+    Tags.Add(FName("EngageableTarget"));
+
     bindDelegates();
     addMappingContext();
-
-    Tags.Add(FName("DemoCharacter"));
 }
 
 void ADemoCharacter::move(const FInputActionValue& input_value)
@@ -240,4 +240,9 @@ void ADemoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
     } else {
         UE_LOG(LogTemp, Error, TEXT("Input actions are not all ready."));
     }
+}
+void ADemoCharacter::getHit_Implementation(const FVector& impact_point)
+{
+    calculateHitDirection(impact_point);
+    spawnHitParticles(impact_point);
 }

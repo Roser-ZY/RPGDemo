@@ -26,6 +26,8 @@ public:
     UFUNCTION(BlueprintCallable)
     void setWeaponCollisionEnabled(ECollisionEnabled::Type collision_enabled);
 
+    void calculateHitDirection(const FVector& impact_point) const;
+
 protected:
     // Called when the game starts or when spawned
     virtual void BeginPlay() override;
@@ -38,6 +40,8 @@ protected:
 
     void disableRotationWithController();
     void rotateToMovementDirection();
+
+    void spawnHitParticles(const FVector& impact_point);
 
     UPROPERTY(VisibleAnywhere, Category = "Attribute")
     TObjectPtr<UAttributeComponent> attribute_component_;

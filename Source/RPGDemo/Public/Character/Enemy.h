@@ -24,7 +24,6 @@ public:
     virtual void Destroyed() override;
 
     virtual void getHit_Implementation(const FVector& impact_point) override;
-    void calculateHitDirection(const FVector& impact_point) const;
 
 protected:
     /**/
@@ -74,9 +73,9 @@ private:
     UPROPERTY()
     TObjectPtr<AActor> combat_target_;
     UPROPERTY(EditAnywhere)
-    double combat_radius_ = 500.0f;
+    double combat_radius_ = 700.0f;
     UPROPERTY(EditAnywhere)
-    double attack_radius_ = 200.0f;
+    double attack_radius_ = 300.0f;
 
 
     TObjectPtr<AAIController> enemy_ai_controller_;

@@ -29,12 +29,8 @@ public:
 protected:
     virtual void BeginPlay() override;
 
-    virtual void onSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                                      UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
-                                      const FHitResult& SweepResult) override;
-
-    virtual void onSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                                    UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) override;
+    void executeGetHit(const FHitResult& box_hit);
+    bool otherActorIsSameType(AActor* other_owner);
 
     // This function will be called multiple times in one hit.
     UFUNCTION()
@@ -50,6 +46,11 @@ protected:
     USceneComponent* box_trace_start_ = nullptr;
     UPROPERTY(VisibleAnywhere, Category = "Weapon Trace")
     USceneComponent* box_trace_end_ = nullptr;
+
+    UPROPERTY(EditAnywhere, Category = "Weapon Trace")
+    FVector box_trace_extent_ = FVector(5.0f, 5.0f, 5.0f);
+    UPROPERTY(EditAnywhere, Category = "Weapon Trace")
+    bool show_debug_box_ = false;
 
     TArray<AActor*> ignored_actors_;
 
