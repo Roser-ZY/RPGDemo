@@ -168,13 +168,11 @@ void ADemoCharacter::attack()
 {
     UE_LOG(LogTemp, Warning, TEXT("Attacking."));
 
-    bool characterCanNotAttack =
-        current_state_ != ECharacterState::EquippedOneHandWeapon || action_state_ != ECharacterActionState::Unoccupied;
-    if (characterCanNotAttack) {
-        return;
-    }
+    bool characterCanAttack =
+        current_state_ == ECharacterState::EquippedOneHandWeapon &&
+        (action_state_ == ECharacterActionState::Unoccupied || action_state_ == ECharacterActionState::HitReaction);
 
-    if (playMontage(attack_montage_)) {
+    if (characterCanAttack && playMontage(attack_montage_)) {
         action_state_ = ECharacterActionState::Attacking;
     }
 }
@@ -199,6 +197,11 @@ void ADemoCharacter::equip()
 }
 
 void ADemoCharacter::end_equip()
+{
+    action_state_ = ECharacterActionState::Unoccupied;
+}
+
+void ADemoCharacter::hit_react_end()
 {
     action_state_ = ECharacterActionState::Unoccupied;
 }
@@ -241,8 +244,11 @@ void ADemoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
         UE_LOG(LogTemp, Error, TEXT("Input actions are not all ready."));
     }
 }
-void ADemoCharacter::getHit_Implementation(const FVector& impact_point)
+void ADemoCharacter::getHit_Implementation(const FVector& impact_point, AActor* hitter)
 {
-    calculateHitDirection(impact_point);
+    calculateHitDirection(hitter->GetActorLocation());
+    setWeaponCollisionEnabled(ECollisionEnabled::NoCollision);
     spawnHitParticles(impact_point);
+    playMontage(hit_react_montage_);
+    action_state_ = ECharacterActionState::HitReaction;
 }

@@ -25,8 +25,8 @@ public:
 
     virtual void Tick(float DeltaTime) override;
     virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-    
-    virtual void getHit_Implementation(const FVector& impact_point) override;
+
+    virtual void getHit_Implementation(const FVector& impact_point, AActor* hitter) override;
 
     ECharacterState get_current_state()
     {
@@ -59,6 +59,9 @@ protected:
     void equip();
     UFUNCTION(BlueprintCallable)
     void end_equip();
+
+    UFUNCTION(BlueprintCallable)
+    void hit_react_end();
 
     UFUNCTION()
     virtual void onCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,

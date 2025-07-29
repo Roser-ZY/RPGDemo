@@ -21,5 +21,5 @@ class RPGDEMO_API IHitInterface {
     // Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
     UFUNCTION(BlueprintNativeEvent)
-    void getHit(const FVector& impact_point);
+    void getHit(const FVector& impact_point, AActor* hitter);
 };

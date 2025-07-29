@@ -111,6 +111,18 @@ bool ABaseCharacter::playMontage(UAnimMontage* montage, FName section_name)
     return true;
 }
 
+void ABaseCharacter::stopMontage(UAnimMontage* montage)
+{
+    if (montage == nullptr) {
+        return;
+    }
+
+    UAnimInstance* anim_instance = GetMesh()->GetAnimInstance();
+    if (anim_instance) {
+        anim_instance->Montage_Stop(0.25f, montage);
+    }
+}
+
 void ABaseCharacter::disableRotationWithController()
 {
     bUseControllerRotationPitch = false;

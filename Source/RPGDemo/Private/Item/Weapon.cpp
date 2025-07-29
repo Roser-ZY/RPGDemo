@@ -85,7 +85,7 @@ void AWeapon::executeGetHit(const FHitResult& box_hit)
     if (hit_actor) {
         IHitInterface* hit_interface = Cast<IHitInterface>(hit_actor);
         if (hit_interface) {
-            hit_interface->Execute_getHit(hit_actor, box_hit.ImpactPoint);
+            hit_interface->Execute_getHit(hit_actor, box_hit.ImpactPoint, GetOwner());
         }
     }
 }
@@ -106,6 +106,8 @@ void AWeapon::onBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor
     if (owner == nullptr || otherActorIsSameType(OtherActor)) {
         return;
     }
+
+    ignored_actors_.AddUnique(owner);
 
     const FVector start = box_trace_start_->GetComponentLocation();
     const FVector end = box_trace_end_->GetComponentLocation();

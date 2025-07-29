@@ -37,6 +37,7 @@ protected:
     virtual void end_attack();
 
     bool playMontage(UAnimMontage* montage, FName seciton_name = NAME_None);
+    void stopMontage(UAnimMontage* montage);
 
     void disableRotationWithController();
     void rotateToMovementDirection();

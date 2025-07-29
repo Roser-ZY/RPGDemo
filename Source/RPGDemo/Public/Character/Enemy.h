@@ -23,7 +23,7 @@ public:
                              AActor* DamageCauser) override;
     virtual void Destroyed() override;
 
-    virtual void getHit_Implementation(const FVector& impact_point) override;
+    virtual void getHit_Implementation(const FVector& impact_point, AActor* hitter) override;
 
 protected:
     /**/
@@ -36,6 +36,8 @@ protected:
     EEnemyDeathPose death_pose_ = EEnemyDeathPose::EEDP_Alive;
     UPROPERTY(BlueprintReadOnly)
     EEnemyState enemy_state_ = EEnemyState::EES_Patrolling;
+    UPROPERTY(BlueprintReadOnly, Category = "Combat")
+    TObjectPtr<AActor> combat_target_;
 
 private:
     UFUNCTION()
@@ -70,8 +72,6 @@ private:
     TObjectPtr<UPawnSensingComponent> pawn_sensing_component_;
     UPROPERTY(EditAnywhere)
     TSubclassOf<AWeapon> weapon_class_;
-    UPROPERTY()
-    TObjectPtr<AActor> combat_target_;
     UPROPERTY(EditAnywhere)
     double combat_radius_ = 700.0f;
     UPROPERTY(EditAnywhere)

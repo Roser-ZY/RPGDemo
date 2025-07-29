@@ -249,7 +249,7 @@ void AEnemy::Tick(float DeltaTime)
     }
 }
 
-void AEnemy::getHit_Implementation(const FVector& impact_point)
+void AEnemy::getHit_Implementation(const FVector& impact_point, AActor* hitter)
 {
     if (enemy_state_ == EEnemyState::EES_Dead) {
         return;
@@ -257,6 +257,11 @@ void AEnemy::getHit_Implementation(const FVector& impact_point)
 
     UE_LOG(LogTemp, Warning, TEXT("The enemy get hit."));
     showHealthBar();
+    clearPatrolTimer();
+    clearAttackTimer();
+    stopMontage(attack_montage_);
+    spawnHitParticles(impact_point);
+    setWeaponCollisionEnabled(ECollisionEnabled::NoCollision);
 
     if (attribute_component_ == nullptr) {
         return;
@@ -266,8 +271,8 @@ void AEnemy::getHit_Implementation(const FVector& impact_point)
     if (attribute_component_->isAlive()) {
         calculateHitDirection(impact_point);
         playMontage(hit_react_montage_);
-        spawnHitParticles(impact_point);
     } else {
+
         playMontage(death_montage_);
         death_pose_ = EEnemyDeathPose::EEDP_Death;
         enemy_state_ = EEnemyState::EES_Dead;

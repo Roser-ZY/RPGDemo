@@ -21,7 +21,7 @@ public:
     // Called every frame
     virtual void Tick(float DeltaTime) override;
 
-    virtual void getHit_Implementation(const FVector& impact_point) override;
+    virtual void getHit_Implementation(const FVector& impact_point, AActor* hitter) override;
 
 protected:
     // Called when the game starts or when spawned
