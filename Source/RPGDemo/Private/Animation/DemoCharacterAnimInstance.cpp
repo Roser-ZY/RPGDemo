@@ -28,5 +28,6 @@ void UDemoCharacterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
     // Get the xy length of the velocity.
     ground_speed = UKismetMathLibrary::VSizeXY(character_movement_component->Velocity);
     is_falling = character_movement_component->IsFalling();
-    character_state = demo_character->get_current_state();
+    character_state = demo_character->getCurrentState();
+    character_action_state = demo_character->getActionState();
 }

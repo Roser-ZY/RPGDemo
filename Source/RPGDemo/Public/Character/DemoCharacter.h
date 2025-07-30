@@ -9,6 +9,8 @@
 #include "CharacterTypes.h"
 #include "DemoCharacter.generated.h"
 
+
+class USlashOverlay;
 class AWeapon;
 class UInputMappingContext;
 class UInputAction;
@@ -25,10 +27,12 @@ public:
 
     virtual void Tick(float DeltaTime) override;
     virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+    virtual float TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator,
+                             AActor* DamageCauser) override;
 
     virtual void getHit_Implementation(const FVector& impact_point, AActor* hitter) override;
 
-    ECharacterState get_current_state()
+    ECharacterState getCurrentState() const
     {
         return current_state_;
     }
@@ -39,9 +43,15 @@ public:
         overlapping_item_ = item;
     }
 
+    FORCEINLINE ECharacterActionState getActionState() const
+    {
+        return action_state_;
+    }
+
 protected:
     // Called when the game starts or when spawned
     virtual void BeginPlay() override;
+    bool canNotDoAction();
 
     void move(const FInputActionValue& input_value);
     void look(const FInputActionValue& input_value);
@@ -62,15 +72,6 @@ protected:
 
     UFUNCTION(BlueprintCallable)
     void hit_react_end();
-
-    UFUNCTION()
-    virtual void onCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                                       UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
-                                       const FHitResult& SweepResult);
-    UFUNCTION()
-    virtual void onCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                                     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
 
     UPROPERTY(EditAnywhere, Category = "Input")
     UInputMappingContext* input_mapping_context_ = nullptr;
@@ -94,8 +95,8 @@ protected:
     UAnimMontage* equip_montage_ = nullptr;
 
 private:
-    void bindDelegates();
     void addMappingContext();
+    void initializeSlashOverlay();
 
     UPROPERTY(EditAnywhere, Category = "Camera")
     TObjectPtr<USpringArmComponent> spring_arm_component_ = nullptr;
@@ -109,4 +110,7 @@ private:
 
     UPROPERTY(VisibleInstanceOnly)
     TObjectPtr<AItem> overlapping_item_ = nullptr;
+
+    UPROPERTY(EditAnywhere)
+    TObjectPtr<USlashOverlay> slash_overlay_ = nullptr;
 };

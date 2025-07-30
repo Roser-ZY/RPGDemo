@@ -36,8 +36,6 @@ protected:
     EEnemyDeathPose death_pose_ = EEnemyDeathPose::EEDP_Alive;
     UPROPERTY(BlueprintReadOnly)
     EEnemyState enemy_state_ = EEnemyState::EES_Patrolling;
-    UPROPERTY(BlueprintReadOnly, Category = "Combat")
-    TObjectPtr<AActor> combat_target_;
 
 private:
     UFUNCTION()

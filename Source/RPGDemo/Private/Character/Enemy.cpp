@@ -5,6 +5,7 @@
 #include "Character/Enemy.h"
 
 #include "AIController.h"
+#include "Character/DemoCharacter.h"
 #include "Component/AttributeComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Perception/PawnSensingComponent.h"
@@ -28,7 +29,6 @@ AEnemy::AEnemy()
     rotateToMovementDirection();
 
     // The attribute component do not need attach to any component.
-    attribute_component_ = CreateDefaultSubobject<UAttributeComponent>(TEXT("Attribute"));
     health_bar_widget_ = CreateDefaultSubobject<UHealthBarComponent>(TEXT("Health Bar"));
     health_bar_widget_->SetupAttachment(RootComponent);
 
@@ -74,7 +74,7 @@ void AEnemy::moveToTarget(AActor* target)
 
     FAIMoveRequest move_request;
     move_request.SetGoalActor(target);
-    move_request.SetAcceptanceRadius(60.0f);
+    move_request.SetAcceptanceRadius(15.0f);
     enemy_ai_controller_->MoveTo(move_request);
 }
 
@@ -142,7 +142,7 @@ void AEnemy::checkCombatTarget()
     bool targetIsOutsideAttackRadius = !inTargetRange(combat_target_, attack_radius_);
     bool targetIsInsideAttackRadius = inTargetRange(combat_target_, attack_radius_);
 
-    if (targetIsOutsideCombatRadius && enemy_state_ != EEnemyState::EES_Patrolling) {
+    if (combat_target_ == nullptr || (targetIsOutsideCombatRadius && enemy_state_ != EEnemyState::EES_Patrolling)) {
         // Outside the target range, lose interest.
         loseInterest();
         hideHealthBar();
@@ -219,7 +219,12 @@ void AEnemy::clearAttackTimer()
 
 void AEnemy::attack()
 {
-    if (enemy_state_ == EEnemyState::EES_Dead) {
+    if (combat_target_ == nullptr || enemy_state_ == EEnemyState::EES_Dead) {
+        return;
+    }
+
+    if (combat_target_->ActorHasTag(FName("Dead"))) {
+        combat_target_ = nullptr;
         return;
     }
 
@@ -286,10 +291,11 @@ void AEnemy::getHit_Implementation(const FVector& impact_point, AActor* hitter)
 float AEnemy::TakeDamage(float DamageAmount, const struct FDamageEvent& DamageEvent, class AController* EventInstigator,
                          AActor* DamageCauser)
 {
-    if (enemy_state_ == EEnemyState::EES_Dead) {
+    if (attribute_component_ == nullptr || enemy_state_ == EEnemyState::EES_Dead) {
         return 0.0f;
     }
-    if (attribute_component_ && health_bar_widget_) {
+
+    if (health_bar_widget_) {
         attribute_component_->receiveDamage(DamageAmount);
         health_bar_widget_->setHealthPercentage(attribute_component_->getHealthPercentage());
     }

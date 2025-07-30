@@ -44,6 +44,11 @@ protected:
 
     void spawnHitParticles(const FVector& impact_point);
 
+    UFUNCTION(BlueprintCallable)
+    FVector getTranslationWarpTarget();
+    UFUNCTION(BlueprintCallable)
+    FVector getRotationWarpTarget();
+
     UPROPERTY(VisibleAnywhere, Category = "Attribute")
     TObjectPtr<UAttributeComponent> attribute_component_;
 
@@ -61,4 +66,10 @@ protected:
 
     UPROPERTY(EditAnywhere, Category = "Animation")
     TObjectPtr<UAnimMontage> death_montage_ = nullptr;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Combat")
+    TObjectPtr<AActor> combat_target_;
+
+    UPROPERTY(EditAnywhere, Category = "Combat")
+    double warp_target_distance_ = 125.0f;
 };

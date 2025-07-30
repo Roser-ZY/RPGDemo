@@ -9,7 +9,10 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "GroomComponent.h"
 #include "Animation/DemoCharacterAnimInstance.h"
+#include "Component/AttributeComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "HUD/SlashHUD.h"
+#include "HUD/SlashOverlay.h"
 #include "Item/Weapon.h"
 
 // Sets default values
@@ -41,15 +44,6 @@ ADemoCharacter::ADemoCharacter()
     eyebrows_component_->AttachmentName = FString("head");
 }
 
-void ADemoCharacter::bindDelegates()
-{
-    UCapsuleComponent* capsule_component = GetCapsuleComponent();
-    if (capsule_component) {
-        capsule_component->OnComponentBeginOverlap.AddDynamic(this, &ADemoCharacter::onCapsuleBeginOverlap);
-        capsule_component->OnComponentEndOverlap.AddDynamic(this, &ADemoCharacter::onCapsuleEndOverlap);
-    }
-}
-
 void ADemoCharacter::addMappingContext()
 {
     if (input_mapping_context_) {
@@ -68,6 +62,23 @@ void ADemoCharacter::addMappingContext()
     }
 }
 
+void ADemoCharacter::initializeSlashOverlay()
+{
+    APlayerController* player_controller = Cast<APlayerController>(Controller);
+    if (player_controller) {
+        ASlashHUD* slash_hud = Cast<ASlashHUD>(player_controller->GetHUD());
+        if (slash_hud) {
+            slash_overlay_ = slash_hud->getSlashOverlay();
+            if (slash_overlay_) {
+                slash_overlay_->setHealthBarPercent(attribute_component_->getHealthPercentage());
+                slash_overlay_->setStaminaBarPercent(1.0f);
+                slash_overlay_->setCoinNumber(0);
+                slash_overlay_->setSoulNumber(0);
+            }
+        }
+    }
+}
+
 // Called when the game starts or when spawned
 void ADemoCharacter::BeginPlay()
 {
@@ -75,13 +86,19 @@ void ADemoCharacter::BeginPlay()
 
     Tags.Add(FName("EngageableTarget"));
 
-    bindDelegates();
+    initializeSlashOverlay();
+
     addMappingContext();
+}
+
+bool ADemoCharacter::canNotDoAction()
+{
+    return action_state_ == ECharacterActionState::Dead || action_state_ != ECharacterActionState::Unoccupied;
 }
 
 void ADemoCharacter::move(const FInputActionValue& input_value)
 {
-    if (action_state_ != ECharacterActionState::Unoccupied) {
+    if (canNotDoAction()) {
         return;
     }
 
@@ -110,7 +127,7 @@ void ADemoCharacter::look(const FInputActionValue& input_value)
 
 void ADemoCharacter::jump(const FInputActionValue& input_value)
 {
-    if (action_state_ != ECharacterActionState::Unoccupied) {
+    if (canNotDoAction()) {
         return;
     }
     const bool is_jumping = input_value.Get<bool>();
@@ -121,7 +138,7 @@ void ADemoCharacter::jump(const FInputActionValue& input_value)
 
 void ADemoCharacter::pickUpAndEquipWeapon(AWeapon* weapon)
 {
-    if (weapon == nullptr) {
+    if (canNotDoAction() || weapon == nullptr) {
         return;
     }
     weapon->equipTo(GetMesh(), FName("right_hand_socket"), this, this);
@@ -135,7 +152,7 @@ void ADemoCharacter::pickUpAndEquipWeapon(AWeapon* weapon)
 
 void ADemoCharacter::toggleEquippedWeaponState()
 {
-    if (equipped_weapon_ == nullptr || action_state_ != ECharacterActionState::Unoccupied) {
+    if (equipped_weapon_ == nullptr || canNotDoAction()) {
         return;
     }
 
@@ -166,6 +183,10 @@ void ADemoCharacter::interact()
 
 void ADemoCharacter::attack()
 {
+    if (canNotDoAction()) {
+        return;
+    }
+
     UE_LOG(LogTemp, Warning, TEXT("Attacking."));
 
     bool characterCanAttack =
@@ -206,17 +227,6 @@ void ADemoCharacter::hit_react_end()
     action_state_ = ECharacterActionState::Unoccupied;
 }
 
-void ADemoCharacter::onCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                                           UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
-                                           const FHitResult& SweepResult)
-{
-}
-
-void ADemoCharacter::onCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                                         UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-}
-
 // Called every frame
 void ADemoCharacter::Tick(float DeltaTime)
 {
@@ -244,11 +254,37 @@ void ADemoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
         UE_LOG(LogTemp, Error, TEXT("Input actions are not all ready."));
     }
 }
+float ADemoCharacter::TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator,
+                                 AActor* DamageCauser)
+{
+    if (action_state_ == ECharacterActionState::Dead || attribute_component_ == nullptr) {
+        return 0.0f;
+    }
+
+    attribute_component_->receiveDamage(DamageAmount);
+    if (slash_overlay_) {
+        slash_overlay_->setHealthBarPercent(attribute_component_->getHealthPercentage());
+    }
+    return DamageAmount;
+}
 void ADemoCharacter::getHit_Implementation(const FVector& impact_point, AActor* hitter)
 {
+    if (action_state_ == ECharacterActionState::Dead) {
+        return;
+    }
+
     calculateHitDirection(hitter->GetActorLocation());
     setWeaponCollisionEnabled(ECollisionEnabled::NoCollision);
     spawnHitParticles(impact_point);
-    playMontage(hit_react_montage_);
-    action_state_ = ECharacterActionState::HitReaction;
+
+    if (attribute_component_->isAlive()) {
+        playMontage(hit_react_montage_);
+        action_state_ = ECharacterActionState::HitReaction;
+    } else {
+        playMontage(death_montage_);
+        Tags.Add(FName("Dead"));
+        action_state_ = ECharacterActionState::Dead;
+        GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }
 }

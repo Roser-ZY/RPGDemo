@@ -3,6 +3,7 @@
 
 #include "Character/BaseCharacter.h"
 
+#include "Component/AttributeComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Item/Weapon.h"
@@ -14,6 +15,7 @@ ABaseCharacter::ABaseCharacter()
     // Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need
     // it.
     PrimaryActorTick.bCanEverTick = true;
+    attribute_component_ = CreateDefaultSubobject<UAttributeComponent>(TEXT("Attribute"));
 
     UCapsuleComponent* capsule_component = GetCapsuleComponent();
     if (capsule_component) {
@@ -143,4 +145,26 @@ void ABaseCharacter::spawnHitParticles(const FVector& impact_point)
     if (hit_particle_system_) {
         UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), hit_particle_system_, impact_point);
     }
+}
+
+FVector ABaseCharacter::getTranslationWarpTarget()
+{
+    if (combat_target_ == nullptr) {
+        return FVector::ZeroVector;
+    }
+
+    const FVector combat_target_location = combat_target_->GetActorLocation();
+    const FVector location = GetActorLocation();
+
+    FVector target_to_me = (location - combat_target_location).GetSafeNormal();
+    target_to_me *= warp_target_distance_;
+    return combat_target_location + target_to_me;
+}
+
+FVector ABaseCharacter::getRotationWarpTarget()
+{
+    if (combat_target_) {
+        return combat_target_->GetActorLocation();
+    }
+    return FVector::ZeroVector;
 }

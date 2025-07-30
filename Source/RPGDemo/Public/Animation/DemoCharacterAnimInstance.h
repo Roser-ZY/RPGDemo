@@ -31,4 +31,6 @@ public:
 
     UPROPERTY(BlueprintReadOnly)
     ECharacterState character_state = ECharacterState::Unequipped;
+    UPROPERTY(BlueprintReadOnly)
+    ECharacterActionState character_action_state = ECharacterActionState::Unoccupied;
 };
