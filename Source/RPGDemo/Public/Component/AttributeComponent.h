@@ -18,6 +18,15 @@ public:
     virtual void TickComponent(float DeltaTime, ELevelTick TickType,
                                FActorComponentTickFunction* ThisTickFunction) override;
 
+    void receiveDamage(float damage);
+    float getHealthPercentage();
+    bool isAlive();
+
+    int32 getCoin() const;
+    int32 getSoul() const;
+    void addCoin(int32 coin_number);
+    void addSoul(int32 soul_number);
+
 protected:
     // Called when the game starts
     virtual void BeginPlay() override;
@@ -28,8 +37,8 @@ private:
     UPROPERTY(EditAnywhere, Category = "Actor Attributes")
     float max_health_ = 100.0f;
 
-public:
-    void receiveDamage(float damage);
-    float getHealthPercentage();
-    bool isAlive();
+    UPROPERTY(EditAnywhere, Category = "Actor Attributes")
+    int32 coin_ = 0;
+    UPROPERTY(EditAnywhere, Category = "Actor Attributes")
+    int32 soul_ = 0;
 };

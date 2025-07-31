@@ -59,8 +59,8 @@ void AWeapon::equipTo(USceneComponent* to_parent, FName to_socket_name, AActor* 
     }
 
     // Deactivate the embers effect when equipped.
-    if (embers_effect_) {
-        embers_effect_->Deactivate();
+    if (item_effect_) {
+        item_effect_->Deactivate();
     }
 }
 

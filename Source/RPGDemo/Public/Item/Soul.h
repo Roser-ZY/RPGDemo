@@ -3,28 +3,34 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Interfaces/PickupInterface.h"
 #include "Item/Item.h"
-#include "Treasure.generated.h"
+#include "Soul.generated.h"
 
+class UNiagaraSystem;
 /**
  *
  */
 UCLASS()
-class RPGDEMO_API ATreasure : public AItem {
+class RPGDEMO_API ASoul : public AItem {
     GENERATED_BODY()
-
 public:
+    void enablePickup();
+
+    int32 getSoul();
+    void setSoul(int32 soul);
+
+protected:
     virtual void onSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                       UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
                                       const FHitResult& SweepResult) override;
 
-    int32 getCoin();
-    void setCoin(int32 coin);
-
 private:
-    UPROPERTY(EditAnywhere, Category = "Sound")
-    USoundBase* pickup_sound_;
+    UPROPERTY(EditAnywhere)
+    TObjectPtr<UNiagaraSystem> pickup_effect_ = nullptr;
 
-    UPROPERTY(EditAnywhere, Category = "Treasure Coin")
-    int32 coin_ = 0;
+    UPROPERTY(EditAnywhere, Category = "Soul Property")
+    int32 soul_;
+
+    bool can_pickup_ = false;
 };

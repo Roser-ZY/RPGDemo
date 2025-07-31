@@ -5,12 +5,14 @@
 #include "Character/Enemy.h"
 
 #include "AIController.h"
+#include "NiagaraFunctionLibrary.h"
 #include "Character/DemoCharacter.h"
 #include "Component/AttributeComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Perception/PawnSensingComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "HUD/HealthBarComponent.h"
+#include "Item/Soul.h"
 #include "Item/Weapon.h"
 #include "Kismet/GameplayStatics.h"
 #include "Navigation/PathFollowingComponent.h"
@@ -277,10 +279,20 @@ void AEnemy::getHit_Implementation(const FVector& impact_point, AActor* hitter)
         calculateHitDirection(impact_point);
         playMontage(hit_react_montage_);
     } else {
-
         playMontage(death_montage_);
         death_pose_ = EEnemyDeathPose::EEDP_Death;
         enemy_state_ = EEnemyState::EES_Dead;
+
+        UWorld* world = GetWorld();
+        if (world) {
+            ASoul* spawned_soul = world->SpawnActor<ASoul>(soul_class_, GetActorLocation(), GetActorRotation());
+            if (spawned_soul && attribute_component_) {
+                spawned_soul->setSoul(attribute_component_->getSoul());
+
+                FTimerHandle enable_soul_timer;
+                GetWorldTimerManager().SetTimer(enable_soul_timer, spawned_soul, &ASoul::enablePickup, 3.0f);
+            }
+        }
 
         // Redress after death.
         hideHealthBar();

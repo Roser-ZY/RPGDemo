@@ -13,6 +13,8 @@
 #include "Components/CapsuleComponent.h"
 #include "HUD/SlashHUD.h"
 #include "HUD/SlashOverlay.h"
+#include "Item/Soul.h"
+#include "Item/Treasure.h"
 #include "Item/Weapon.h"
 
 // Sets default values
@@ -286,5 +288,39 @@ void ADemoCharacter::getHit_Implementation(const FVector& impact_point, AActor* 
         action_state_ = ECharacterActionState::Dead;
         GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }
+}
+
+void ADemoCharacter::setOverlappingItem(AItem* item)
+{
+    overlapping_item_ = item;
+}
+
+void ADemoCharacter::addSoul(ASoul* soul)
+{
+    if (attribute_component_ == nullptr) {
+        return;
+    }
+
+    if (soul) {
+        attribute_component_->addSoul(soul->getSoul());
+    }
+
+    if (slash_overlay_) {
+        slash_overlay_->setSoulNumber(attribute_component_->getSoul());
+    }
+}
+void ADemoCharacter::addTreasure(ATreasure* treasure)
+{
+    if (attribute_component_ == nullptr) {
+        return;
+    }
+
+    if (treasure) {
+        attribute_component_->addCoin(treasure->getCoin());
+    }
+
+    if (slash_overlay_) {
+        slash_overlay_->setCoinNumber(attribute_component_->getCoin());
     }
 }

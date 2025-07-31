@@ -7,6 +7,8 @@
 #include "CharacterTypes.h"
 #include "Enemy.generated.h"
 
+
+class ASoul;
 class UPawnSensingComponent;
 class AAIController;
 enum class EEnemyDeathPose : uint8;
@@ -99,4 +101,7 @@ private:
     float attack_max_ = 1.2f;
     UPROPERTY(EditAnywhere, Category = "AI Navigation")
     float chase_speed_ = 300.0f;
+
+    UPROPERTY(EditAnywhere, Category = "Soul Property")
+    TSubclassOf<ASoul> soul_class_;
 };

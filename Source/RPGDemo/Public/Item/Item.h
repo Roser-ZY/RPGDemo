@@ -9,7 +9,10 @@
 class UNiagaraComponent;
 class USphereComponent;
 
-enum class EItemState : uint8 { EIS_Hovering, EIS_Equipped };
+enum class EItemState : uint8 {
+    EIS_Hovering,
+    EIS_Equipped
+};
 
 UCLASS()
 class RPGDEMO_API AItem : public AActor {
@@ -44,5 +47,5 @@ protected:
     EItemState item_state_ = EItemState::EIS_Hovering;
 
     UPROPERTY(EditAnywhere)
-    UNiagaraComponent* embers_effect_ = nullptr;
+    UNiagaraComponent* item_effect_ = nullptr;
 };

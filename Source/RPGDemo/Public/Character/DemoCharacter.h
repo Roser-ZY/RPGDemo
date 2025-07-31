@@ -7,8 +7,8 @@
 #include "InputActionValue.h"
 #include "Camera/CameraComponent.h"
 #include "CharacterTypes.h"
+#include "Interfaces/PickupInterface.h"
 #include "DemoCharacter.generated.h"
-
 
 class USlashOverlay;
 class AWeapon;
@@ -19,7 +19,7 @@ class USpringArmComponent;
 class UGroomComponent;
 
 UCLASS()
-class RPGDEMO_API ADemoCharacter : public ABaseCharacter {
+class RPGDEMO_API ADemoCharacter : public ABaseCharacter, public IPickupInterface {
     GENERATED_BODY()
 
 public:
@@ -37,11 +37,9 @@ public:
         return current_state_;
     }
 
-    UFUNCTION(BlueprintCallable)
-    FORCEINLINE void setOverlappingItem(AItem* item)
-    {
-        overlapping_item_ = item;
-    }
+    virtual void setOverlappingItem(AItem* item) override;
+    virtual void addSoul(ASoul* soul) override;
+    virtual void addTreasure(ATreasure* treasure) override;
 
     FORCEINLINE ECharacterActionState getActionState() const
     {

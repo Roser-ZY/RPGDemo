@@ -34,6 +34,26 @@ bool UAttributeComponent::isAlive()
     return current_health_ > 0.0f;
 }
 
+int32 UAttributeComponent::getCoin() const
+{
+    return coin_;
+}
+
+int32 UAttributeComponent::getSoul() const
+{
+    return soul_;
+}
+
+void UAttributeComponent::addCoin(int32 coin_number)
+{
+    coin_ += coin_number;
+}
+
+void UAttributeComponent::addSoul(int32 soul_number)
+{
+    soul_ += soul_number;
+}
+
 // Called every frame
 void UAttributeComponent::TickComponent(float DeltaTime, ELevelTick TickType,
                                         FActorComponentTickFunction* ThisTickFunction)

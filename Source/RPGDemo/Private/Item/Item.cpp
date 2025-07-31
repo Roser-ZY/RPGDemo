@@ -21,8 +21,8 @@ AItem::AItem()
     sphere_component_ = CreateDefaultSubobject<USphereComponent>("SphereComponent");
     sphere_component_->SetupAttachment(RootComponent);
 
-    embers_effect_ = CreateDefaultSubobject<UNiagaraComponent>("EmbersEffect");
-    embers_effect_->SetupAttachment(RootComponent);
+    item_effect_ = CreateDefaultSubobject<UNiagaraComponent>("EmbersEffect");
+    item_effect_->SetupAttachment(RootComponent);
 }
 
 // Called when the game starts or when spawned
@@ -44,10 +44,9 @@ void AItem::onSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActo
         GEngine->AddOnScreenDebugMessage(0, 30, FColor::Cyan, TEXT("Item begins overlap."));
     }
 
-    // Set the overlapping item to the character.
-    ADemoCharacter* demo_character = Cast<ADemoCharacter>(OtherActor);
-    if (demo_character) {
-        demo_character->setOverlappingItem(this);
+    IPickupInterface* pickup_interface = Cast<IPickupInterface>(OtherActor);
+    if (pickup_interface) {
+        pickup_interface->setOverlappingItem(this);
     }
 }
 
@@ -59,9 +58,9 @@ void AItem::onSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
     }
 
     // Unset the overlapping item to the character.
-    ADemoCharacter* demo_character = Cast<ADemoCharacter>(OtherActor);
-    if (demo_character) {
-        demo_character->setOverlappingItem(nullptr);
+    IPickupInterface* pickup_interface = Cast<IPickupInterface>(OtherActor);
+    if (pickup_interface) {
+        pickup_interface->setOverlappingItem(nullptr);
     }
 }
 

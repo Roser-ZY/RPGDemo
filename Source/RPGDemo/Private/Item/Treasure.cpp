@@ -11,12 +11,25 @@ void ATreasure::onSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, A
                                      const FHitResult& SweepResult)
 {
     // Set the overlapping item to the character.
-    ADemoCharacter* demo_character = Cast<ADemoCharacter>(OtherActor);
-    if (demo_character) {
+    IPickupInterface* pickup_interface = Cast<IPickupInterface>(OtherActor);
+    if (pickup_interface) {
         if (pickup_sound_) {
             UGameplayStatics::PlaySoundAtLocation(this, pickup_sound_, GetActorLocation());
         }
+
+        pickup_interface->addTreasure(this);
+
         // Destroy the treasure when overlapped with the character.
         Destroy();
     }
+}
+
+int32 ATreasure::getCoin()
+{
+    return coin_;
+}
+
+void ATreasure::setCoin(int32 coin)
+{
+    coin_ = coin;
 }
