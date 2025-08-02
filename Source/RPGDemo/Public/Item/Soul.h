@@ -32,5 +32,5 @@ private:
     UPROPERTY(EditAnywhere, Category = "Soul Property")
     int32 soul_;
 
-    bool can_pickup_ = false;
+    bool can_pickup_ = true;
 };

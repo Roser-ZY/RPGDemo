@@ -50,6 +50,7 @@ protected:
     // Called when the game starts or when spawned
     virtual void BeginPlay() override;
     bool canNotDoAction();
+    bool canDodge(float used_stamina);
 
     void move(const FInputActionValue& input_value);
     void look(const FInputActionValue& input_value);
@@ -57,6 +58,10 @@ protected:
     void pickUpAndEquipWeapon(AWeapon* weapon);
     void toggleEquippedWeaponState();
     void interact();
+
+    void dodge();
+    UFUNCTION(BlueprintCallable)
+    void endDodge();
 
     virtual void attack() override;
     virtual void end_attack() override;
@@ -83,6 +88,8 @@ protected:
     TObjectPtr<UInputAction> attack_action_ = nullptr;
     UPROPERTY(EditAnywhere, Category = "Input")
     TObjectPtr<UInputAction> interact_action_ = nullptr;
+    UPROPERTY(EditAnywhere, Category = "Input")
+    TObjectPtr<UInputAction> dodge_action_ = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
     ECharacterState current_state_ = ECharacterState::Unequipped;
@@ -91,6 +98,9 @@ protected:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
     UAnimMontage* equip_montage_ = nullptr;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+    UAnimMontage* dodge_montage_ = nullptr;
 
 private:
     void addMappingContext();

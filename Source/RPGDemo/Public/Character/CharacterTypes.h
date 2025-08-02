@@ -12,6 +12,7 @@ enum class ECharacterActionState : uint8 {
     HitReaction UMETA(DisplayName = "HitReaction"),
     Attacking UMETA(DisplayName = "Attacking"),
     EquippingWeapon UMETA(DisplayName = "EquippingWeapon"),
+    Dodging UMETA(DisplayName = "Dodging"),
     Dead UMETA(DisplayName = "Dead")
 };
 

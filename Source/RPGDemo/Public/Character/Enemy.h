@@ -21,6 +21,7 @@ class RPGDEMO_API AEnemy : public ABaseCharacter {
 public:
     AEnemy();
     virtual void Tick(float DeltaTime) override;
+    void spawnSoul();
     virtual float TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator,
                              AActor* DamageCauser) override;
     virtual void Destroyed() override;

@@ -24,8 +24,12 @@ public:
 
     int32 getCoin() const;
     int32 getSoul() const;
+    float getCurrentStamina() const;
+    float getStaminaPercentage() const;
     void addCoin(int32 coin_number);
     void addSoul(int32 soul_number);
+    void useStamina(float used_stamina);
+    void regenerateStamina(float delta_time);
 
 protected:
     // Called when the game starts
@@ -41,4 +45,10 @@ private:
     int32 coin_ = 0;
     UPROPERTY(EditAnywhere, Category = "Actor Attributes")
     int32 soul_ = 0;
+    UPROPERTY(EditAnywhere, Category = "Actor Attributes")
+    float max_stamina_ = 100.0f;
+    UPROPERTY(EditAnywhere, Category = "Actor Attributes")
+    float current_stamina_ = 100.0f;
+    UPROPERTY(EditAnywhere, Category = "Actor Attributes")
+    float stamina_recoverty_rate_ = 8.0f;
 };

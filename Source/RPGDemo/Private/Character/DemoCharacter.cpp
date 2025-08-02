@@ -98,6 +98,11 @@ bool ADemoCharacter::canNotDoAction()
     return action_state_ == ECharacterActionState::Dead || action_state_ != ECharacterActionState::Unoccupied;
 }
 
+bool ADemoCharacter::canDodge(float used_stamina)
+{
+    return attribute_component_ && attribute_component_->getCurrentStamina() >= used_stamina;
+}
+
 void ADemoCharacter::move(const FInputActionValue& input_value)
 {
     if (canNotDoAction()) {
@@ -136,6 +141,28 @@ void ADemoCharacter::jump(const FInputActionValue& input_value)
     if (is_jumping) {
         Jump();
     }
+}
+
+void ADemoCharacter::dodge()
+{
+    constexpr float stamina_costum = 25.0f;
+    if (canNotDoAction() || !canDodge(stamina_costum)) {
+        return;
+    }
+
+    action_state_ = ECharacterActionState::Dodging;
+    GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    playMontage(dodge_montage_);
+    if (attribute_component_ && slash_overlay_) {
+        attribute_component_->useStamina(stamina_costum);
+        slash_overlay_->setStaminaBarPercent(attribute_component_->getStaminaPercentage());
+    }
+}
+
+void ADemoCharacter::endDodge()
+{
+    GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    action_state_ = ECharacterActionState::Unoccupied;
 }
 
 void ADemoCharacter::pickUpAndEquipWeapon(AWeapon* weapon)
@@ -233,6 +260,10 @@ void ADemoCharacter::hit_react_end()
 void ADemoCharacter::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
+    if (attribute_component_ && slash_overlay_) {
+        attribute_component_->regenerateStamina(DeltaTime);
+        slash_overlay_->setStaminaBarPercent(attribute_component_->getStaminaPercentage());
+    }
 }
 
 // Called to bind functionality to input
@@ -251,6 +282,7 @@ void ADemoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
             enhanced_input_component->BindAction(attack_action_, ETriggerEvent::Started, this, &ADemoCharacter::attack);
             enhanced_input_component->BindAction(interact_action_, ETriggerEvent::Started, this,
                                                  &ADemoCharacter::interact);
+            enhanced_input_component->BindAction(dodge_action_, ETriggerEvent::Started, this, &ADemoCharacter::dodge);
         }
     } else {
         UE_LOG(LogTemp, Error, TEXT("Input actions are not all ready."));

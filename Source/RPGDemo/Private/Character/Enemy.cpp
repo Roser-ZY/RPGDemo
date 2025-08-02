@@ -8,6 +8,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "Character/DemoCharacter.h"
 #include "Component/AttributeComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Perception/PawnSensingComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -62,7 +63,7 @@ void AEnemy::BeginPlay()
     if (world && weapon_class_) {
         AWeapon* weapon = world->SpawnActor<AWeapon>(weapon_class_);
         if (weapon) {
-            weapon->equipTo(GetMesh(), FName("left_hand_socket"), this, this);
+            weapon->equipTo(GetMesh(), FName("weapon_socket"), this, this);
             equipped_weapon_ = weapon;
         }
     }
@@ -76,7 +77,7 @@ void AEnemy::moveToTarget(AActor* target)
 
     FAIMoveRequest move_request;
     move_request.SetGoalActor(target);
-    move_request.SetAcceptanceRadius(15.0f);
+    move_request.SetAcceptanceRadius(60.0f);
     enemy_ai_controller_->MoveTo(move_request);
 }
 
@@ -256,6 +257,21 @@ void AEnemy::Tick(float DeltaTime)
     }
 }
 
+void AEnemy::spawnSoul()
+{
+    UWorld* world = GetWorld();
+    if (world) {
+        const FVector spawn_location = GetActorLocation() + FVector(0.0f, 0.0f, 125.0f);
+        ASoul* spawned_soul = world->SpawnActor<ASoul>(soul_class_, spawn_location, GetActorRotation());
+        if (spawned_soul && attribute_component_) {
+            spawned_soul->setSoul(attribute_component_->getSoul());
+            spawned_soul->SetOwner(this);
+
+            // FTimerHandle enable_soul_timer;
+            // GetWorldTimerManager().SetTimer(enable_soul_timer, spawned_soul, &ASoul::enablePickup, 3.0f);
+        }
+    }
+}
 void AEnemy::getHit_Implementation(const FVector& impact_point, AActor* hitter)
 {
     if (enemy_state_ == EEnemyState::EES_Dead) {
@@ -280,19 +296,11 @@ void AEnemy::getHit_Implementation(const FVector& impact_point, AActor* hitter)
         playMontage(hit_react_montage_);
     } else {
         playMontage(death_montage_);
+        GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         death_pose_ = EEnemyDeathPose::EEDP_Death;
         enemy_state_ = EEnemyState::EES_Dead;
 
-        UWorld* world = GetWorld();
-        if (world) {
-            ASoul* spawned_soul = world->SpawnActor<ASoul>(soul_class_, GetActorLocation(), GetActorRotation());
-            if (spawned_soul && attribute_component_) {
-                spawned_soul->setSoul(attribute_component_->getSoul());
-
-                FTimerHandle enable_soul_timer;
-                GetWorldTimerManager().SetTimer(enable_soul_timer, spawned_soul, &ASoul::enablePickup, 3.0f);
-            }
-        }
+        spawnSoul();
 
         // Redress after death.
         hideHealthBar();
