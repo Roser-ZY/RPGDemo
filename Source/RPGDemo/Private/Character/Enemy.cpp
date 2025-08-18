@@ -77,7 +77,7 @@ void AEnemy::moveToTarget(AActor* target)
 
     FAIMoveRequest move_request;
     move_request.SetGoalActor(target);
-    move_request.SetAcceptanceRadius(60.0f);
+    move_request.SetAcceptanceRadius(100.0f);
     enemy_ai_controller_->MoveTo(move_request);
 }
 
